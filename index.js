@@ -20,7 +20,7 @@ const openai = new OpenAI({
 
 app.post("/analyze-form", async (req, res) => {
     try {
-        const { fields, context, fillOnlyEmpty } = req.body;
+        const { fields, context, pageUrl, pageTitle, fillOnlyEmpty } = req.body;
 
         if (!fields) {
             return res.status(400).json({ error: "No fields provided" });
@@ -33,12 +33,20 @@ IMPORTANT - Fill only empty: Each field may include a "currentValue" property. O
             : `
 Generate values for every field (overwrite all).`;
 
+        const contextLines = [];
+        if (pageUrl) contextLines.push(`Page: ${pageUrl}`);
+        if (pageTitle) contextLines.push(`Page title: ${pageTitle}`);
+        if (context) contextLines.push(`Purpose / form: ${context}`);
+        const contextBlock = contextLines.length
+            ? `Context:\n${contextLines.join("\n")}\n\nUse this context so values are coherent and relevant (e.g. job application → job-related text in textareas, contact form → contact-style content).\n\n`
+            : "";
+
         const prompt = `
 You are an expert AI Form Filler.
 Analyze the following list of form fields and generate realistic test data.
 ${fillOnlyEmptyMode ? "Only suggest for fields that are currently empty (currentValue empty or missing)." : "Generate data for EVERY SINGLE field."}
 
-${context ? `The form is about: "${context}". Use this context to generate relevant data.` : "Generate realistic generic data based on the field labels."}
+${contextBlock || (context ? `The form is about: "${context}". Use this context to generate relevant data.\n\n` : "Generate realistic generic data based on the field labels.\n\n")}
 
 Rules:
 1. Return a JSON object where the keys match the 'key' property of each field.
