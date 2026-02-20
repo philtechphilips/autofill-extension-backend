@@ -20,15 +20,23 @@ const openai = new OpenAI({
 
 app.post("/analyze-form", async (req, res) => {
     try {
-        const { fields, context } = req.body;
+        const { fields, context, fillOnlyEmpty } = req.body;
 
         if (!fields) {
             return res.status(400).json({ error: "No fields provided" });
         }
 
+        const fillOnlyEmptyMode = !!fillOnlyEmpty;
+        const emptyFieldsNote = fillOnlyEmptyMode
+            ? `
+IMPORTANT - Fill only empty: Each field may include a "currentValue" property. Only suggest values for fields where currentValue is missing, empty, or whitespace. Do NOT include in your JSON output any key for a field that already has a non-empty currentValue. Return a JSON object that contains only keys for fields that were empty (so the client can merge with existing values).`
+            : `
+Generate values for every field (overwrite all).`;
+
         const prompt = `
-You are an expert AI Form Filler. 
-Analyze the following list of form fields and generate realistic test data for EVERY SINGLE field.
+You are an expert AI Form Filler.
+Analyze the following list of form fields and generate realistic test data.
+${fillOnlyEmptyMode ? "Only suggest for fields that are currently empty (currentValue empty or missing)." : "Generate data for EVERY SINGLE field."}
 
 ${context ? `The form is about: "${context}". Use this context to generate relevant data.` : "Generate realistic generic data based on the field labels."}
 
@@ -37,8 +45,9 @@ Rules:
 2. For dropdowns (SELECT), pick a valid 'value' from the 'options' list provided.
 3. For dates, strictly use the format 'YYYY-MM-DD'.
 4. For phone numbers, use international format (e.g., +123456789).
-5. Do not skip any fields. Fill everything even if it seems optional.
+5. ${fillOnlyEmptyMode ? "Only include keys for fields whose currentValue is empty or missing. Omit any key for a field that already has a value." : "Do not skip any fields. Fill everything even if it seems optional."}
 6. If the context implies a specific type (e.g. "Category Form"), ensure "name" fields represent that category, not a person's name.
+${emptyFieldsNote}
 
 Fields:
 ${JSON.stringify(fields, null, 2)}
