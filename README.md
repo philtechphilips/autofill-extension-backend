@@ -4,11 +4,12 @@ Node.js API used by the [Autofill.Ai extension](../autofill-extention) to genera
 
 ## Features
 
-- **POST /api/form/analyze** – Receives form fields, context, page URL/title, and options; returns AI-generated values keyed by field `key`.
+- **POST /api/v1/form/analyze** – Receives form fields, context, page URL/title, and options; returns AI-generated values keyed by field `key`.
 - **Fill only empty** – When `fillOnlyEmpty` is true, the prompt instructs the model to return only keys for fields that are currently empty.
 - **Richer context** – Uses page URL, page title, and form purpose in the prompt so responses are context-aware (e.g. job forms get job-appropriate text).
-- **GET /api/health** – Simple health check for the extension to verify the server is reachable.
-- **Auth routes** – Placeholder routes for user authentication (`/api/auth/*`).
+- **GET /api/v1/health** – Simple health check for the extension to verify the server is reachable.
+- **Auth routes** – Placeholder routes for user authentication (`/api/v1/auth/*`).
+- **Swagger docs** – Interactive API documentation at `/api-docs`.
 
 ## Requirements
 
@@ -66,14 +67,19 @@ Server listens on `http://localhost:<PORT>`. You should see: `[Server] Running o
 
 ## API
 
-All routes are prefixed with `/api`. Legacy routes (`/health`, `/analyze-form`) redirect to the new endpoints for backward compatibility.
+All routes are prefixed with `/api/v1`. Legacy routes (`/health`, `/analyze-form`, `/api/*`) redirect to v1 endpoints for backward compatibility.
 
-### GET /api/health
+### Swagger Documentation
+
+- **Swagger UI:** `http://localhost:9000/api-docs` – Interactive API documentation
+- **OpenAPI JSON:** `http://localhost:9000/api-docs.json` – Raw OpenAPI spec
+
+### GET /api/v1/health
 
 - **Response:** `200` with `{ "success": true, "data": { "ok": true, "timestamp": "..." } }`.
 - Used by the extension to detect if the backend is reachable.
 
-### POST /api/form/analyze
+### POST /api/v1/form/analyze
 
 - **Request body (JSON):**
   - `fields` (required) – Array of field objects with at least `key`, and optionally `label`, `type`, `options`, `currentValue`, etc.
@@ -90,11 +96,11 @@ All routes are prefixed with `/api`. Legacy routes (`/health`, `/analyze-form`) 
 
 ### Auth Routes (Placeholder)
 
-- `POST /api/auth/register` – User registration
-- `POST /api/auth/login` – User login
-- `POST /api/auth/logout` – User logout
-- `POST /api/auth/refresh` – Refresh JWT token
-- `GET /api/auth/me` – Get current user
+- `POST /api/v1/auth/register` – User registration
+- `POST /api/v1/auth/login` – User login
+- `POST /api/v1/auth/logout` – User logout
+- `POST /api/v1/auth/refresh` – Refresh JWT token
+- `GET /api/v1/auth/me` – Get current user
 
 ## Project Structure
 
@@ -102,7 +108,8 @@ All routes are prefixed with `/api`. Legacy routes (`/health`, `/analyze-form`) 
 autofill-be/
 ├── src/
 │   ├── config/
-│   │   └── index.js              # Centralized configuration
+│   │   ├── index.js              # Centralized configuration
+│   │   └── swagger.js            # Swagger/OpenAPI configuration
 │   ├── controllers/
 │   │   ├── form.controller.js    # Form analysis handler
 │   │   └── health.controller.js  # Health check handler
