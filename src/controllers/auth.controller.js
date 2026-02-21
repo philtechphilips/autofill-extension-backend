@@ -38,6 +38,7 @@ export const register = async (req, res, next) => {
         created(res, {
             user: result.user,
             accessToken: result.accessToken,
+            encryptionKey: result.encryptionKey,
             message: result.message,
         });
     } catch (err) {
@@ -60,6 +61,7 @@ export const login = async (req, res, next) => {
         success(res, {
             user: result.user,
             accessToken: result.accessToken,
+            encryptionKey: result.encryptionKey,
         });
     } catch (err) {
         next(err);

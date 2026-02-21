@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema(
             type: Date,
             default: null,
         },
+        encryptionKey: {
+            type: String,
+            default: null,
+        },
         refreshTokens: {
             type: [refreshTokenSchema],
             default: [],

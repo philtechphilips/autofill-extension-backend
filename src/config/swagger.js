@@ -246,6 +246,78 @@ const options = {
                         },
                     },
                 },
+                Profile: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "string",
+                            example: "507f1f77bcf86cd799439011",
+                        },
+                        userId: {
+                            type: "string",
+                            example: "507f1f77bcf86cd799439012",
+                        },
+                        name: {
+                            type: "string",
+                            example: "Work Profile",
+                        },
+                        encryptedData: {
+                            type: "string",
+                            description: "AES-GCM encrypted profile data (base64)",
+                        },
+                        iv: {
+                            type: "string",
+                            description: "Initialization vector for decryption (base64)",
+                        },
+                        isDefault: {
+                            type: "boolean",
+                            example: true,
+                        },
+                        createdAt: {
+                            type: "string",
+                            format: "date-time",
+                        },
+                        updatedAt: {
+                            type: "string",
+                            format: "date-time",
+                        },
+                    },
+                },
+                ProfileCreateRequest: {
+                    type: "object",
+                    required: ["name", "encryptedData", "iv"],
+                    properties: {
+                        name: {
+                            type: "string",
+                            example: "Work Profile",
+                        },
+                        encryptedData: {
+                            type: "string",
+                            description: "AES-GCM encrypted profile data (base64)",
+                        },
+                        iv: {
+                            type: "string",
+                            description: "Initialization vector (base64)",
+                        },
+                    },
+                },
+                ProfileUpdateRequest: {
+                    type: "object",
+                    properties: {
+                        name: {
+                            type: "string",
+                            example: "Updated Profile Name",
+                        },
+                        encryptedData: {
+                            type: "string",
+                            description: "AES-GCM encrypted profile data (base64)",
+                        },
+                        iv: {
+                            type: "string",
+                            description: "Initialization vector (base64)",
+                        },
+                    },
+                },
             },
         },
     },

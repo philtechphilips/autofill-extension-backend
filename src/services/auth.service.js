@@ -58,6 +58,8 @@ const generateToken = () => crypto.randomBytes(32).toString("hex");
 
 const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
 
+const generateEncryptionKey = () => crypto.randomBytes(32).toString("base64");
+
 const sanitizeUser = (user) => {
     if (!user) return null;
     if (typeof user.toJSON === "function") {
@@ -150,11 +152,13 @@ export const register = async ({ email, password, name }) => {
     try {
         const hashedPassword = await hashPassword(password);
         const verificationToken = generateToken();
+        const encryptionKey = generateEncryptionKey();
 
         const user = await userRepository.create({
             email: email.trim().toLowerCase(),
             name: name?.trim() || null,
             password: hashedPassword,
+            encryptionKey,
             isEmailVerified: false,
             emailVerificationToken: hashToken(verificationToken),
             emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -173,6 +177,7 @@ export const register = async ({ email, password, name }) => {
             user: sanitizeUser(user),
             accessToken,
             refreshToken,
+            encryptionKey,
             message: "Please check your email to verify your account",
         };
     } catch (err) {
@@ -200,6 +205,12 @@ export const login = async ({ email, password }) => {
         return { error: "Invalid email or password", status: 401 };
     }
 
+    // Generate encryption key for old users who don't have one
+    if (!user.encryptionKey) {
+        user.encryptionKey = generateEncryptionKey();
+        await user.save();
+    }
+
     const accessToken = generateAccessToken(user);
     const refreshToken = await generateRefreshToken(user);
 
@@ -207,6 +218,7 @@ export const login = async ({ email, password }) => {
         user: sanitizeUser(user),
         accessToken,
         refreshToken,
+        encryptionKey: user.encryptionKey,
     };
 };
 
