@@ -1,16 +1,16 @@
 {
   "name": "autofill-be",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/server.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "node --watch index.js"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Autofill backend API",
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",

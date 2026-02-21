@@ -1,32 +1,18 @@
-import express from "express";
-import cors from "cors";
 import OpenAI from "openai";
-import dotenv from "dotenv";
+import config from "../config/index.js";
+import { parseAIResponse } from "../utils/parser.js";
 
-dotenv.config();
+class AIService {
+    constructor() {
+        this.client = new OpenAI({
+            apiKey: config.ai.apiKey,
+            baseURL: config.ai.baseURL,
+        });
+    }
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-app.get("/health", (req, res) => {
-    res.json({ ok: true });
-});
-
-const openai = new OpenAI({
-    apiKey: process.env.DEEPSEEK_API_KEY,
-    baseURL: "https://api.deepseek.com",
-});
-
-app.post("/analyze-form", async (req, res) => {
-    try {
-        const { fields, context, pageUrl, pageTitle, fillOnlyEmpty } = req.body;
-
-        if (!fields) {
-            return res.status(400).json({ error: "No fields provided" });
-        }
-
+    buildPrompt({ fields, context, pageUrl, pageTitle, fillOnlyEmpty }) {
         const fillOnlyEmptyMode = !!fillOnlyEmpty;
+
         const emptyFieldsNote = fillOnlyEmptyMode
             ? `
 IMPORTANT - Fill only empty: Each field may include a "currentValue" property. Only suggest values for fields where currentValue is missing, empty, or whitespace. Do NOT include in your JSON output any key for a field that already has a non-empty currentValue. Return a JSON object that contains only keys for fields that were empty (so the client can merge with existing values).`
@@ -37,11 +23,12 @@ Generate values for every field (overwrite all).`;
         if (pageUrl) contextLines.push(`Page: ${pageUrl}`);
         if (pageTitle) contextLines.push(`Page title: ${pageTitle}`);
         if (context) contextLines.push(`Purpose / form: ${context}`);
+
         const contextBlock = contextLines.length
             ? `Context:\n${contextLines.join("\n")}\n\nUse this context so values are coherent and relevant (e.g. job application → job-related text in textareas, contact form → contact-style content).\n\n`
             : "";
 
-        const prompt = `
+        return `
 You are an expert AI Form Filler.
 Analyze the following list of form fields and generate realistic test data.
 ${fillOnlyEmptyMode ? "Only suggest for fields that are currently empty (currentValue empty or missing)." : "Generate data for EVERY SINGLE field."}
@@ -62,36 +49,19 @@ ${JSON.stringify(fields, null, 2)}
 
 Only return the JSON object. No explanations, no markdown blocks.
 `;
+    }
 
-        const response = await openai.chat.completions.create({
-            model: "deepseek-chat",
+    async analyzeForm(formData) {
+        const prompt = this.buildPrompt(formData);
+
+        const response = await this.client.chat.completions.create({
+            model: config.ai.model,
             messages: [{ role: "user", content: prompt }],
         });
 
         const content = response.choices[0].message.content;
-
-        // Handle potential markdown wrapping
-        let parsedData;
-        try {
-            const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
-            const jsonString = jsonMatch ? jsonMatch[1].trim() : content.trim();
-            parsedData = JSON.parse(jsonString);
-        } catch (parseErr) {
-            console.error("Failed to parse AI response:", content);
-            return res.status(500).json({
-                error: "AI returned invalid JSON",
-                raw: content
-            });
-        }
-
-        res.json(parsedData);
-    } catch (err) {
-        console.error("AI Error:", err);
-        res.status(500).json({ error: "AI processing failed", details: err.message });
+        return parseAIResponse(content);
     }
-});
+}
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
-});
+export default new AIService();
