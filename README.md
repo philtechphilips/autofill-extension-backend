@@ -28,13 +28,13 @@ npm install
 Create a `.env` file in the project root, e.g. by copying `.env.example` and filling in your key. `.env` is gitignored.
 
 | Variable           | Required | Description                                                              |
-|--------------------|----------|--------------------------------------------------------------------------|
+| ------------------ | -------- | ------------------------------------------------------------------------ |
 | `NODE_ENV`         | No       | Environment (`development` or `production`). Default: `development`.     |
 | `PORT`             | No       | Server port. Default: `3000`. Use `9000` to match the extension default. |
 | `DEEPSEEK_API_KEY` | Yes      | Your DeepSeek API key.                                                   |
 | `AI_BASE_URL`      | No       | AI provider base URL. Default: `https://api.deepseek.com`.               |
 | `AI_MODEL`         | No       | AI model to use. Default: `deepseek-chat`.                               |
-| `JWT_SECRET`       | Yes*     | Secret for JWT signing (*required when auth is implemented).             |
+| `JWT_SECRET`       | Yes\*    | Secret for JWT signing (\*required when auth is implemented).            |
 | `JWT_EXPIRES_IN`   | No       | JWT expiration time. Default: `7d`.                                      |
 | `CORS_ORIGIN`      | No       | Allowed CORS origin. Default: `*` (all origins).                         |
 
