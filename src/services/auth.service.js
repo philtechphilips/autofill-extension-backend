@@ -1,8 +1,10 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import config from "../config/index.js";
 import userRepository from "../models/user.model.js";
+import emailService from "./email.service.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
@@ -40,12 +42,16 @@ const comparePassword = async (password, hash) => {
     return bcrypt.compare(password, hash);
 };
 
+const generateToken = () => crypto.randomBytes(32).toString("hex");
+
+const hashToken = (token) => crypto.createHash("sha256").update(token).digest("hex");
+
 const sanitizeUser = (user) => {
     if (!user) return null;
     if (typeof user.toJSON === "function") {
         return user.toJSON();
     }
-    const { passwordHash, refreshTokens, _id, __v, ...safe } = user;
+    const { password, refreshTokens, _id, __v, emailVerificationToken, emailVerificationExpires, passwordResetToken, passwordResetExpires, ...safe } = user;
     return { id: _id?.toString(), ...safe };
 };
 
@@ -115,12 +121,22 @@ export const register = async ({ email, password, name }) => {
     }
 
     try {
-        const passwordHash = await hashPassword(password);
+        const hashedPassword = await hashPassword(password);
+        const verificationToken = generateToken();
         
         const user = await userRepository.create({
             email: email.trim().toLowerCase(),
             name: name?.trim() || null,
-            passwordHash,
+            password: hashedPassword,
+            isEmailVerified: false,
+            emailVerificationToken: hashToken(verificationToken),
+            emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        });
+
+        const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
+        await emailService.sendVerificationEmail(user.email, {
+            name: user.name,
+            verificationUrl,
         });
 
         const accessToken = generateAccessToken(user);
@@ -130,6 +146,7 @@ export const register = async ({ email, password, name }) => {
             user: sanitizeUser(user),
             accessToken,
             refreshToken,
+            message: "Please check your email to verify your account",
         };
     } catch (err) {
         if (err.code === 11000) {
@@ -150,7 +167,7 @@ export const login = async ({ email, password }) => {
         return { error: "Invalid email or password", status: 401 };
     }
 
-    const isValid = await comparePassword(password, user.passwordHash);
+    const isValid = await comparePassword(password, user.password);
     
     if (!isValid) {
         return { error: "Invalid email or password", status: 401 };
@@ -163,6 +180,162 @@ export const login = async ({ email, password }) => {
         user: sanitizeUser(user),
         accessToken,
         refreshToken,
+    };
+};
+
+export const verifyEmail = async (token) => {
+    if (!token) {
+        return { error: "Verification token is required", status: 400 };
+    }
+
+    const hashedToken = hashToken(token);
+    
+    const user = await userRepository.findOne({
+        emailVerificationToken: hashedToken,
+        emailVerificationExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+        return { error: "Invalid or expired verification token", status: 400 };
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = null;
+    user.emailVerificationExpires = null;
+    await user.save();
+
+    await emailService.sendWelcomeEmail(user.email, { name: user.name });
+
+    return {
+        user: sanitizeUser(user),
+        message: "Email verified successfully",
+    };
+};
+
+export const resendVerificationEmail = async (email) => {
+    if (!validateEmail(email)) {
+        return { error: "Invalid email format", status: 400 };
+    }
+
+    const user = await userRepository.findByEmail(email);
+
+    if (!user) {
+        return { success: true, message: "If the email exists, a verification link has been sent" };
+    }
+
+    if (user.isEmailVerified) {
+        return { error: "Email is already verified", status: 400 };
+    }
+
+    const verificationToken = generateToken();
+    
+    user.emailVerificationToken = hashToken(verificationToken);
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    await user.save();
+
+    const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
+    await emailService.sendVerificationEmail(user.email, {
+        name: user.name,
+        verificationUrl,
+    });
+
+    return {
+        success: true,
+        message: "Verification email sent",
+    };
+};
+
+export const forgotPassword = async (email) => {
+    if (!validateEmail(email)) {
+        return { error: "Invalid email format", status: 400 };
+    }
+
+    const user = await userRepository.findByEmail(email);
+
+    if (!user) {
+        return { success: true, message: "If the email exists, a password reset link has been sent" };
+    }
+
+    const resetToken = generateToken();
+    
+    user.passwordResetToken = hashToken(resetToken);
+    user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
+    await user.save();
+
+    const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
+    await emailService.sendForgotPasswordEmail(user.email, {
+        name: user.name,
+        resetUrl,
+    });
+
+    return {
+        success: true,
+        message: "If the email exists, a password reset link has been sent",
+    };
+};
+
+export const resetPassword = async (token, newPassword) => {
+    if (!token) {
+        return { error: "Reset token is required", status: 400 };
+    }
+
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+        return { error: passwordValidation.message, status: 400 };
+    }
+
+    const hashedToken = hashToken(token);
+    
+    const user = await userRepository.findOne({
+        passwordResetToken: hashedToken,
+        passwordResetExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+        return { error: "Invalid or expired reset token", status: 400 };
+    }
+
+    user.password = await hashPassword(newPassword);
+    user.passwordResetToken = null;
+    user.passwordResetExpires = null;
+    user.refreshTokens = [];
+    await user.save();
+
+    await emailService.sendPasswordChangedEmail(user.email, { name: user.name });
+
+    return {
+        success: true,
+        message: "Password reset successfully",
+    };
+};
+
+export const changePassword = async (userId, currentPassword, newPassword) => {
+    const user = await userRepository.findById(userId);
+    
+    if (!user) {
+        return { error: "User not found", status: 404 };
+    }
+
+    const isValid = await comparePassword(currentPassword, user.password);
+    
+    if (!isValid) {
+        return { error: "Current password is incorrect", status: 401 };
+    }
+
+    const passwordValidation = validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+        return { error: passwordValidation.message, status: 400 };
+    }
+
+    user.password = await hashPassword(newPassword);
+    user.refreshTokens = [];
+    await user.save();
+
+    await emailService.sendPasswordChangedEmail(user.email, { name: user.name });
+
+    return {
+        success: true,
+        message: "Password changed successfully",
     };
 };
 
@@ -256,6 +429,11 @@ export const getUser = async (userId) => {
 export default {
     register,
     login,
+    verifyEmail,
+    resendVerificationEmail,
+    forgotPassword,
+    resetPassword,
+    changePassword,
     refreshAccessToken,
     logout,
     logoutAll,

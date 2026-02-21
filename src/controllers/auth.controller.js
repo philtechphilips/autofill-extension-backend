@@ -38,6 +38,7 @@ export const register = async (req, res, next) => {
         created(res, {
             user: result.user,
             accessToken: result.accessToken,
+            message: result.message,
         });
     } catch (err) {
         next(err);
@@ -60,6 +61,95 @@ export const login = async (req, res, next) => {
             user: result.user,
             accessToken: result.accessToken,
         });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const verifyEmail = async (req, res, next) => {
+    try {
+        const { token } = req.body;
+
+        const result = await authService.verifyEmail(token);
+
+        if (result.error) {
+            return error(res, result.error, result.status);
+        }
+
+        success(res, {
+            user: result.user,
+            message: result.message,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const resendVerificationEmail = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        const result = await authService.resendVerificationEmail(email);
+
+        if (result.error) {
+            return error(res, result.error, result.status);
+        }
+
+        success(res, { message: result.message });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        const result = await authService.forgotPassword(email);
+
+        if (result.error) {
+            return error(res, result.error, result.status);
+        }
+
+        success(res, { message: result.message });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const resetPassword = async (req, res, next) => {
+    try {
+        const { token, password } = req.body;
+
+        const result = await authService.resetPassword(token, password);
+
+        if (result.error) {
+            return error(res, result.error, result.status);
+        }
+
+        success(res, { message: result.message });
+    } catch (err) {
+        next(err);
+    }
+};
+
+export const changePassword = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            return unauthorized(res, "Authentication required");
+        }
+
+        const { currentPassword, newPassword } = req.body;
+
+        const result = await authService.changePassword(req.user.id, currentPassword, newPassword);
+
+        if (result.error) {
+            return error(res, result.error, result.status);
+        }
+
+        clearRefreshTokenCookie(res);
+
+        success(res, { message: result.message });
     } catch (err) {
         next(err);
     }
@@ -139,6 +229,11 @@ export const me = async (req, res, next) => {
 export default {
     register,
     login,
+    verifyEmail,
+    resendVerificationEmail,
+    forgotPassword,
+    resetPassword,
+    changePassword,
     refresh,
     logout,
     logoutAll,

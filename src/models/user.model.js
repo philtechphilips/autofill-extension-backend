@@ -26,9 +26,29 @@ const userSchema = new mongoose.Schema({
         trim: true,
         default: null,
     },
-    passwordHash: {
+    password: {
         type: String,
         required: true,
+    },
+    isEmailVerified: {
+        type: Boolean,
+        default: false,
+    },
+    emailVerificationToken: {
+        type: String,
+        default: null,
+    },
+    emailVerificationExpires: {
+        type: Date,
+        default: null,
+    },
+    passwordResetToken: {
+        type: String,
+        default: null,
+    },
+    passwordResetExpires: {
+        type: Date,
+        default: null,
     },
     refreshTokens: {
         type: [refreshTokenSchema],
@@ -41,8 +61,12 @@ const userSchema = new mongoose.Schema({
             ret.id = ret._id.toString();
             delete ret._id;
             delete ret.__v;
-            delete ret.passwordHash;
+            delete ret.password;
             delete ret.refreshTokens;
+            delete ret.emailVerificationToken;
+            delete ret.emailVerificationExpires;
+            delete ret.passwordResetToken;
+            delete ret.passwordResetExpires;
             return ret;
         },
     },

@@ -235,6 +235,10 @@ const options = {
                             nullable: true,
                             example: "John Doe",
                         },
+                        isEmailVerified: {
+                            type: "boolean",
+                            example: false,
+                        },
                         createdAt: {
                             type: "string",
                             format: "date-time",

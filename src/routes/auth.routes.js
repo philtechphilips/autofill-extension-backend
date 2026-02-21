@@ -10,7 +10,7 @@ const router = Router();
  * /auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account with email and password
+ *     description: Create a new user account. A verification email will be sent.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -20,28 +20,15 @@ const router = Router();
  *             $ref: '#/components/schemas/AuthRegisterRequest'
  *     responses:
  *       201:
- *         description: User registered successfully
+ *         description: User registered successfully. Check email for verification.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AuthResponse'
- *         headers:
- *           Set-Cookie:
- *             description: HTTP-only refresh token cookie
- *             schema:
- *               type: string
  *       400:
  *         description: Invalid input (email format, password requirements)
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       409:
  *         description: Email already registered
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.post("/register", registerLimiter, authController.register);
 
@@ -50,7 +37,7 @@ router.post("/register", registerLimiter, authController.register);
  * /auth/login:
  *   post:
  *     summary: Login user
- *     description: Authenticate user with email and password, returns JWT tokens
+ *     description: Authenticate user with email and password
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -65,32 +52,163 @@ router.post("/register", registerLimiter, authController.register);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AuthResponse'
- *         headers:
- *           Set-Cookie:
- *             description: HTTP-only refresh token cookie
- *             schema:
- *               type: string
- *       400:
- *         description: Missing email or password
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Invalid credentials
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.post("/login", authLimiter, authController.login);
+
+/**
+ * @swagger
+ * /auth/verify-email:
+ *   post:
+ *     summary: Verify email address
+ *     description: Verify user's email using the token sent via email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Verification token from email
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post("/verify-email", authController.verifyEmail);
+
+/**
+ * @swagger
+ * /auth/resend-verification:
+ *   post:
+ *     summary: Resend verification email
+ *     description: Request a new verification email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Verification email sent (if account exists)
+ *       400:
+ *         description: Email already verified or invalid format
+ */
+router.post("/resend-verification", authLimiter, authController.resendVerificationEmail);
+
+/**
+ * @swagger
+ * /auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     description: Send a password reset link to the user's email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Reset email sent (if account exists)
+ */
+router.post("/forgot-password", authLimiter, authController.forgotPassword);
+
+/**
+ * @swagger
+ * /auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     description: Reset password using the token from email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 description: Reset token from email
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *                 description: New password
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid/expired token or weak password
+ */
+router.post("/reset-password", authLimiter, authController.resetPassword);
+
+/**
+ * @swagger
+ * /auth/change-password:
+ *   post:
+ *     summary: Change password
+ *     description: Change password for authenticated user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 format: password
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       401:
+ *         description: Current password incorrect or not authenticated
+ */
+router.post("/change-password", authenticate, authController.changePassword);
 
 /**
  * @swagger
  * /auth/refresh:
  *   post:
  *     summary: Refresh access token
- *     description: Get a new access token using the refresh token (from cookie or body)
+ *     description: Get a new access token using the refresh token
  *     tags: [Auth]
  *     requestBody:
  *       content:
@@ -104,16 +222,8 @@ router.post("/login", authLimiter, authController.login);
  *     responses:
  *       200:
  *         description: Token refreshed successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AuthResponse'
  *       401:
  *         description: Invalid or expired refresh token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.post("/refresh", authLimiter, authController.refresh);
 
@@ -122,27 +232,13 @@ router.post("/refresh", authLimiter, authController.refresh);
  * /auth/logout:
  *   post:
  *     summary: Logout user
- *     description: Invalidate the current refresh token and clear cookie
+ *     description: Invalidate the current refresh token
  *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Logout successful
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     message:
- *                       type: string
- *                       example: Logged out successfully
  */
 router.post("/logout", optionalAuth, authController.logout);
 
@@ -158,26 +254,8 @@ router.post("/logout", optionalAuth, authController.logout);
  *     responses:
  *       200:
  *         description: Logged out from all devices
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: object
- *                   properties:
- *                     message:
- *                       type: string
- *                       example: Logged out from all devices
  *       401:
  *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.post("/logout-all", authenticate, authController.logoutAll);
 
@@ -200,7 +278,6 @@ router.post("/logout-all", authenticate, authController.logoutAll);
  *               properties:
  *                 success:
  *                   type: boolean
- *                   example: true
  *                 data:
  *                   type: object
  *                   properties:
@@ -208,10 +285,6 @@ router.post("/logout-all", authenticate, authController.logoutAll);
  *                       $ref: '#/components/schemas/User'
  *       401:
  *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.get("/me", authenticate, authController.me);
 
