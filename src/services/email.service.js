@@ -81,8 +81,8 @@ const buttonStyle = `
 `;
 
 const templates = {
-  verifyEmail: ({ name, verificationUrl }) =>
-    baseTemplate(`
+    verifyEmail: ({ name, verificationUrl }) =>
+        baseTemplate(`
         <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
           Verify your email
         </h1>
@@ -109,8 +109,8 @@ const templates = {
         </p>
     `),
 
-  welcomeEmail: ({ name }) =>
-    baseTemplate(`
+    welcomeEmail: ({ name }) =>
+        baseTemplate(`
         <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
           Welcome to ${config.appName}! 🎉
         </h1>
@@ -139,8 +139,8 @@ const templates = {
         </table>
     `),
 
-  forgotPassword: ({ name, resetUrl }) =>
-    baseTemplate(`
+    forgotPassword: ({ name, resetUrl }) =>
+        baseTemplate(`
         <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
           Reset your password
         </h1>
@@ -167,8 +167,8 @@ const templates = {
         </p>
     `),
 
-  passwordChanged: ({ name }) =>
-    baseTemplate(`
+    passwordChanged: ({ name }) =>
+        baseTemplate(`
         <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
           Password changed successfully
         </h1>
@@ -195,100 +195,100 @@ const templates = {
 };
 
 export const sendVerificationEmail = async (to, { name, verificationUrl }) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: config.email.from,
-      to,
-      replyTo: config.email.replyTo,
-      subject: `Verify your email - ${config.appName}`,
-      html: templates.verifyEmail({ name, verificationUrl }),
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `Verify your email - ${config.appName}`,
+            html: templates.verifyEmail({ name, verificationUrl }),
+        });
 
-    if (error) {
-      console.error("[Email] Verification email failed:", error);
-      return { success: false, error };
+        if (error) {
+            console.error("[Email] Verification email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Verification email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Verification email error:", err);
+        return { success: false, error: err.message };
     }
-
-    console.log(`[Email] Verification email sent to ${to}`);
-    return { success: true, data };
-  } catch (err) {
-    console.error("[Email] Verification email error:", err);
-    return { success: false, error: err.message };
-  }
 };
 
 export const sendWelcomeEmail = async (to, { name }) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: config.email.from,
-      to,
-      replyTo: config.email.replyTo,
-      subject: `Welcome to ${config.appName}! 🎉`,
-      html: templates.welcomeEmail({ name }),
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `Welcome to ${config.appName}! 🎉`,
+            html: templates.welcomeEmail({ name }),
+        });
 
-    if (error) {
-      console.error("[Email] Welcome email failed:", error);
-      return { success: false, error };
+        if (error) {
+            console.error("[Email] Welcome email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Welcome email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Welcome email error:", err);
+        return { success: false, error: err.message };
     }
-
-    console.log(`[Email] Welcome email sent to ${to}`);
-    return { success: true, data };
-  } catch (err) {
-    console.error("[Email] Welcome email error:", err);
-    return { success: false, error: err.message };
-  }
 };
 
 export const sendForgotPasswordEmail = async (to, { name, resetUrl }) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: config.email.from,
-      to,
-      replyTo: config.email.replyTo,
-      subject: `Reset your password - ${config.appName}`,
-      html: templates.forgotPassword({ name, resetUrl }),
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `Reset your password - ${config.appName}`,
+            html: templates.forgotPassword({ name, resetUrl }),
+        });
 
-    if (error) {
-      console.error("[Email] Forgot password email failed:", error);
-      return { success: false, error };
+        if (error) {
+            console.error("[Email] Forgot password email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Forgot password email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Forgot password email error:", err);
+        return { success: false, error: err.message };
     }
-
-    console.log(`[Email] Forgot password email sent to ${to}`);
-    return { success: true, data };
-  } catch (err) {
-    console.error("[Email] Forgot password email error:", err);
-    return { success: false, error: err.message };
-  }
 };
 
 export const sendPasswordChangedEmail = async (to, { name }) => {
-  try {
-    const { data, error } = await resend.emails.send({
-      from: config.email.from,
-      to,
-      replyTo: config.email.replyTo,
-      subject: `Password changed - ${config.appName}`,
-      html: templates.passwordChanged({ name }),
-    });
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `Password changed - ${config.appName}`,
+            html: templates.passwordChanged({ name }),
+        });
 
-    if (error) {
-      console.error("[Email] Password changed email failed:", error);
-      return { success: false, error };
+        if (error) {
+            console.error("[Email] Password changed email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Password changed email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Password changed email error:", err);
+        return { success: false, error: err.message };
     }
-
-    console.log(`[Email] Password changed email sent to ${to}`);
-    return { success: true, data };
-  } catch (err) {
-    console.error("[Email] Password changed email error:", err);
-    return { success: false, error: err.message };
-  }
 };
 
 export default {
-  sendVerificationEmail,
-  sendWelcomeEmail,
-  sendForgotPasswordEmail,
-  sendPasswordChangedEmail,
+    sendVerificationEmail,
+    sendWelcomeEmail,
+    sendForgotPasswordEmail,
+    sendPasswordChangedEmail,
 };

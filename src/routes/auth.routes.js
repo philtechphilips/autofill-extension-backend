@@ -109,11 +109,7 @@ router.post("/verify-email", authController.verifyEmail);
  *       400:
  *         description: Email already verified or invalid format
  */
-router.post(
-  "/resend-verification",
-  authLimiter,
-  authController.resendVerificationEmail,
-);
+router.post("/resend-verification", authLimiter, authController.resendVerificationEmail);
 
 /**
  * @swagger
