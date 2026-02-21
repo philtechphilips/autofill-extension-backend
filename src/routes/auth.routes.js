@@ -1,5 +1,7 @@
 import { Router } from "express";
-import { success } from "../utils/response.js";
+import authController from "../controllers/auth.controller.js";
+import { authenticate, optionalAuth } from "../middleware/auth.js";
+import { authLimiter, registerLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
@@ -8,7 +10,7 @@ const router = Router();
  * /auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account
+ *     description: Create a new user account with email and password
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -23,23 +25,32 @@ const router = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AuthResponse'
+ *         headers:
+ *           Set-Cookie:
+ *             description: HTTP-only refresh token cookie
+ *             schema:
+ *               type: string
  *       400:
- *         description: Invalid input or email already exists
+ *         description: Invalid input (email format, password requirements)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: Email already registered
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/register", (req, res) => {
-    success(res, { message: "Registration endpoint - not yet implemented" });
-});
+router.post("/register", registerLimiter, authController.register);
 
 /**
  * @swagger
  * /auth/login:
  *   post:
  *     summary: Login user
- *     description: Authenticate user and return JWT token
+ *     description: Authenticate user with email and password, returns JWT tokens
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -54,6 +65,17 @@ router.post("/register", (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/AuthResponse'
+ *         headers:
+ *           Set-Cookie:
+ *             description: HTTP-only refresh token cookie
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Missing email or password
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Invalid credentials
  *         content:
@@ -61,42 +83,24 @@ router.post("/register", (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/login", (req, res) => {
-    success(res, { message: "Login endpoint - not yet implemented" });
-});
-
-/**
- * @swagger
- * /auth/logout:
- *   post:
- *     summary: Logout user
- *     description: Invalidate the current session/token
- *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Logout successful
- *       401:
- *         description: Not authenticated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- */
-router.post("/logout", (req, res) => {
-    success(res, { message: "Logout endpoint - not yet implemented" });
-});
+router.post("/login", authLimiter, authController.login);
 
 /**
  * @swagger
  * /auth/refresh:
  *   post:
  *     summary: Refresh access token
- *     description: Get a new access token using refresh token
+ *     description: Get a new access token using the refresh token (from cookie or body)
  *     tags: [Auth]
- *     security:
- *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token (optional if using cookie)
  *     responses:
  *       200:
  *         description: Token refreshed successfully
@@ -111,9 +115,71 @@ router.post("/logout", (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/refresh", (req, res) => {
-    success(res, { message: "Refresh endpoint - not yet implemented" });
-});
+router.post("/refresh", authLimiter, authController.refresh);
+
+/**
+ * @swagger
+ * /auth/logout:
+ *   post:
+ *     summary: Logout user
+ *     description: Invalidate the current refresh token and clear cookie
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Logged out successfully
+ */
+router.post("/logout", optionalAuth, authController.logout);
+
+/**
+ * @swagger
+ * /auth/logout-all:
+ *   post:
+ *     summary: Logout from all devices
+ *     description: Invalidate all refresh tokens for the user
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Logged out from all devices
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Logged out from all devices
+ *       401:
+ *         description: Not authenticated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.post("/logout-all", authenticate, authController.logoutAll);
 
 /**
  * @swagger
@@ -138,12 +204,8 @@ router.post("/refresh", (req, res) => {
  *                 data:
  *                   type: object
  *                   properties:
- *                     id:
- *                       type: string
- *                     email:
- *                       type: string
- *                     name:
- *                       type: string
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       401:
  *         description: Not authenticated
  *         content:
@@ -151,8 +213,6 @@ router.post("/refresh", (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get("/me", (req, res) => {
-    success(res, { message: "Get user endpoint - not yet implemented" });
-});
+router.get("/me", authenticate, authController.me);
 
 export default router;

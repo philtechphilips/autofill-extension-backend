@@ -205,19 +205,43 @@ const options = {
                         data: {
                             type: "object",
                             properties: {
-                                token: {
+                                accessToken: {
                                     type: "string",
+                                    description: "JWT access token (short-lived)",
                                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
                                 },
                                 user: {
-                                    type: "object",
-                                    properties: {
-                                        id: { type: "string" },
-                                        email: { type: "string" },
-                                        name: { type: "string" },
-                                    },
+                                    $ref: "#/components/schemas/User",
                                 },
                             },
+                        },
+                    },
+                },
+                User: {
+                    type: "object",
+                    properties: {
+                        id: {
+                            type: "string",
+                            format: "uuid",
+                            example: "550e8400-e29b-41d4-a716-446655440000",
+                        },
+                        email: {
+                            type: "string",
+                            format: "email",
+                            example: "user@example.com",
+                        },
+                        name: {
+                            type: "string",
+                            nullable: true,
+                            example: "John Doe",
+                        },
+                        createdAt: {
+                            type: "string",
+                            format: "date-time",
+                        },
+                        updatedAt: {
+                            type: "string",
+                            format: "date-time",
                         },
                     },
                 },

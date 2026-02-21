@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import config from "./config/index.js";
 import swaggerSpec from "./config/swagger.js";
@@ -8,8 +9,12 @@ import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
-app.use(cors({ origin: config.cors.origin }));
+app.use(cors({ 
+    origin: config.cors.origin,
+    credentials: true,
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customCss: ".swagger-ui .topbar { display: none }",
