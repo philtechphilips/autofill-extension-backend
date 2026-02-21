@@ -10,7 +10,7 @@ class AIService {
         });
     }
 
-    buildPrompt({ fields, context, pageUrl, pageTitle, fillOnlyEmpty, profileData }) {
+    buildPrompt({ fields, context, pageUrl, pageTitle, fillOnlyEmpty, profileData, randomSeed }) {
         const fillOnlyEmptyMode = !!fillOnlyEmpty;
 
         const emptyFieldsNote = fillOnlyEmptyMode
@@ -51,11 +51,22 @@ ${isCV ? "- This profile was created from a CV/Resume, so it contains detailed p
 `;
         }
 
+        // Add randomization instruction when no profile is selected
+        const randomizationNote = !profileData
+            ? `
+IMPORTANT - RANDOMIZATION: Generate COMPLETELY DIFFERENT and UNIQUE data each time. This is request #${randomSeed}.
+- Use different names, emails, phone numbers, addresses each time
+- Vary the style and content of text responses
+- Pick different options for dropdowns, radios, and checkboxes
+- Be creative and diverse - never repeat the same data pattern
+`
+            : "";
+
         return `
 You are an expert AI Form Filler.
 ${userDataSection ? "You have access to the user's real CV/profile data. Use it to fill forms accurately with their actual information." : "Analyze the following list of form fields and generate realistic test data."}
 ${fillOnlyEmptyMode ? "Only suggest for fields that are currently empty (currentValue empty or missing)." : "Generate data for EVERY SINGLE field."}
-
+${randomizationNote}
 ${userDataSection}${contextBlock || (context ? `The form is about: "${context}". Use this context to generate relevant data.\n\n` : userDataSection ? "" : "Generate realistic generic data based on the field labels.\n\n")}
 
 Rules:
@@ -75,11 +86,17 @@ Only return the JSON object. No explanations, no markdown blocks.
     }
 
     async analyzeForm(formData) {
-        const prompt = this.buildPrompt(formData);
+        // Add random seed for variety when no profile is selected
+        const randomSeed = Date.now() + Math.floor(Math.random() * 100000);
+        const prompt = this.buildPrompt({ ...formData, randomSeed });
+
+        // Use higher temperature when no profile to get more varied results
+        const temperature = formData.profileData ? 0.3 : 0.9;
 
         const response = await this.client.chat.completions.create({
             model: config.ai.model,
             messages: [{ role: "user", content: prompt }],
+            temperature: temperature,
         });
 
         const content = response.choices[0].message.content;
