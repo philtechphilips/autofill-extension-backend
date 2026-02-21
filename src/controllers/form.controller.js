@@ -1,5 +1,6 @@
 import aiService from "../services/ai.service.js";
 import { success, badRequest, error } from "../utils/response.js";
+import { extractTextFromPDF, extractTextFromDOCX } from "../utils/parser.js";
 
 export const analyzeForm = async (req, res, next) => {
     try {
@@ -54,17 +55,39 @@ export const enhanceText = async (req, res, next) => {
 
 export const parseCV = async (req, res, next) => {
     try {
-        const { cvText } = req.body;
+        const { cvText, pdfBase64, docxBase64, fileName } = req.body;
 
-        if (!cvText || typeof cvText !== "string") {
+        let textContent = cvText;
+
+        // Handle PDF file
+        if (pdfBase64) {
+            try {
+                const pdfBuffer = Buffer.from(pdfBase64, "base64");
+                textContent = await extractTextFromPDF(pdfBuffer);
+            } catch (pdfErr) {
+                return badRequest(res, `Failed to parse PDF: ${pdfErr.message}`);
+            }
+        }
+
+        // Handle DOCX file
+        if (docxBase64) {
+            try {
+                const docxBuffer = Buffer.from(docxBase64, "base64");
+                textContent = await extractTextFromDOCX(docxBuffer);
+            } catch (docxErr) {
+                return badRequest(res, `Failed to parse DOCX: ${docxErr.message}`);
+            }
+        }
+
+        if (!textContent || typeof textContent !== "string") {
             return badRequest(res, "CV text content is required");
         }
 
-        if (cvText.trim().length < 50) {
+        if (textContent.trim().length < 50) {
             return badRequest(res, "CV content is too short. Please provide more content.");
         }
 
-        const result = await aiService.parseCV(cvText);
+        const result = await aiService.parseCV(textContent);
 
         success(res, result);
     } catch (err) {
