@@ -47,12 +47,16 @@ export const createCheckout = async (req, res) => {
 export const getCredits = async (req, res) => {
     try {
         const userId = req.user.id;
-        const credits = await userRepository.getCredits(userId);
-        const stats = await transactionRepository.getUserStats(userId);
+        const [credits, stats, lastPack] = await Promise.all([
+            userRepository.getCredits(userId),
+            transactionRepository.getUserStats(userId),
+            transactionRepository.getLastPurchasedPack(userId),
+        ]);
 
         return success(res, {
             credits,
             stats,
+            lastPack,
         });
     } catch (err) {
         return error(res, "Failed to get credit balance");

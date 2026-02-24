@@ -111,7 +111,7 @@ const templates = {
         </p>
     `),
 
-    welcomeEmail: ({ name }) =>
+    welcomeEmail: ({ name, freeCredits }) =>
         baseTemplate(`
         <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
           Welcome to ${config.appName}! 🎉
@@ -120,6 +120,23 @@ const templates = {
           Hi${name ? ` ${name}` : ""},<br><br>
           Your email has been verified and your account is now active. You're all set to use AI-powered form autofill!
         </p>
+        ${
+            freeCredits
+                ? `
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 24px; text-align: center;">
+          <p style="margin: 0 0 8px; font-size: 14px; color: #166534; font-weight: 500;">
+            🎁 Welcome Gift
+          </p>
+          <p style="margin: 0; font-size: 32px; font-weight: 700; color: #166534;">
+            ${freeCredits} Credits
+          </p>
+          <p style="margin: 8px 0 0; font-size: 13px; color: #15803d;">
+            Added to your account - start using them now!
+          </p>
+        </div>
+        `
+                : ""
+        }
         <div style="background-color: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
           <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #000000;">
             Getting Started
@@ -322,14 +339,14 @@ export const sendVerificationEmail = async (to, { name, verificationUrl }) => {
     }
 };
 
-export const sendWelcomeEmail = async (to, { name }) => {
+export const sendWelcomeEmail = async (to, { name, freeCredits }) => {
     try {
         const { data, error } = await resend.emails.send({
             from: config.email.from,
             to,
             replyTo: config.email.replyTo,
-            subject: `Welcome to ${config.appName}! 🎉`,
-            html: templates.welcomeEmail({ name }),
+            subject: `Welcome to ${config.appName}! 🎉${freeCredits ? ` You got ${freeCredits} free credits!` : ""}`,
+            html: templates.welcomeEmail({ name, freeCredits }),
         });
 
         if (error) {

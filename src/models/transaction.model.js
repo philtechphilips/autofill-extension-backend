@@ -177,6 +177,23 @@ class TransactionRepository extends BaseModel {
 
         return result;
     }
+
+    async getLastPurchasedPack(userId) {
+        const lastPurchase = await this.model
+            .findOne({
+                userId: new mongoose.Types.ObjectId(userId),
+                type: "purchase",
+            })
+            .sort({ createdAt: -1 });
+
+        if (!lastPurchase) return null;
+
+        return {
+            packId: lastPurchase.metadata?.packId,
+            packName: lastPurchase.metadata?.packName,
+            purchasedAt: lastPurchase.createdAt,
+        };
+    }
 }
 
 export const transactionRepository = new TransactionRepository();

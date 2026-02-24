@@ -4,6 +4,8 @@ import crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import config from "../config/index.js";
 import userRepository from "../models/user.model.js";
+import { settingsRepository } from "../models/settings.model.js";
+import { transactionRepository } from "../models/transaction.model.js";
 import emailService from "./email.service.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -154,15 +156,30 @@ export const register = async ({ email, password, name }) => {
         const verificationToken = generateToken();
         const encryptionKey = generateEncryptionKey();
 
+        // Get welcome pack tokens for new signups
+        const welcomePack = await settingsRepository.getPack("welcome");
+        const freeTokens = welcomePack?.tokens || 0;
+
         const user = await userRepository.create({
             email: email.trim().toLowerCase(),
             name: name?.trim() || null,
             password: hashedPassword,
             encryptionKey,
+            credits: freeTokens,
             isEmailVerified: false,
             emailVerificationToken: hashToken(verificationToken),
             emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         });
+
+        // Record the bonus transaction if free tokens > 0
+        if (freeTokens > 0) {
+            await transactionRepository.createBonus(
+                user._id,
+                freeTokens,
+                freeTokens,
+                `${welcomePack?.name || "Welcome Pack"} - Free signup credits`
+            );
+        }
 
         const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
         await emailService.sendVerificationEmail(user.email, {
@@ -243,7 +260,10 @@ export const verifyEmail = async (token) => {
     user.emailVerificationExpires = null;
     await user.save();
 
-    await emailService.sendWelcomeEmail(user.email, { name: user.name });
+    await emailService.sendWelcomeEmail(user.email, {
+        name: user.name,
+        freeCredits: user.credits || 0,
+    });
 
     return {
         user: sanitizeUser(user),
