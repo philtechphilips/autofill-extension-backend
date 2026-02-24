@@ -1,6 +1,7 @@
 import { Router } from "express";
 import profileController from "../controllers/profile.controller.js";
 import { authenticate } from "../middleware/auth.js";
+import { apiLimiter, strictApiLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
 
@@ -33,7 +34,7 @@ const router = Router();
  *       401:
  *         description: Not authenticated
  */
-router.get("/", authenticate, profileController.getProfiles);
+router.get("/", authenticate, apiLimiter, profileController.getProfiles);
 
 /**
  * @swagger
@@ -58,7 +59,7 @@ router.get("/", authenticate, profileController.getProfiles);
  *       409:
  *         description: Profile name already exists
  */
-router.post("/", authenticate, profileController.createProfile);
+router.post("/", authenticate, strictApiLimiter, profileController.createProfile);
 
 /**
  * @swagger
@@ -88,7 +89,7 @@ router.post("/", authenticate, profileController.createProfile);
  *       400:
  *         description: Invalid input
  */
-router.post("/sync", authenticate, profileController.syncProfiles);
+router.post("/sync", authenticate, strictApiLimiter, profileController.syncProfiles);
 
 /**
  * @swagger
@@ -111,7 +112,7 @@ router.post("/sync", authenticate, profileController.syncProfiles);
  *       404:
  *         description: Profile not found
  */
-router.get("/:id", authenticate, profileController.getProfile);
+router.get("/:id", authenticate, apiLimiter, profileController.getProfile);
 
 /**
  * @swagger
@@ -140,7 +141,7 @@ router.get("/:id", authenticate, profileController.getProfile);
  *       404:
  *         description: Profile not found
  */
-router.put("/:id", authenticate, profileController.updateProfile);
+router.put("/:id", authenticate, strictApiLimiter, profileController.updateProfile);
 
 /**
  * @swagger
@@ -163,7 +164,7 @@ router.put("/:id", authenticate, profileController.updateProfile);
  *       404:
  *         description: Profile not found
  */
-router.delete("/:id", authenticate, profileController.deleteProfile);
+router.delete("/:id", authenticate, strictApiLimiter, profileController.deleteProfile);
 
 /**
  * @swagger
@@ -186,6 +187,6 @@ router.delete("/:id", authenticate, profileController.deleteProfile);
  *       404:
  *         description: Profile not found
  */
-router.post("/:id/default", authenticate, profileController.setDefaultProfile);
+router.post("/:id/default", authenticate, apiLimiter, profileController.setDefaultProfile);
 
 export default router;

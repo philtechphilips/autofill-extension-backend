@@ -2,10 +2,18 @@ import { userRepository } from "../models/user.model.js";
 import { transactionRepository } from "../models/transaction.model.js";
 import { settingsRepository } from "../models/settings.model.js";
 
+const OPERATION_TO_COST_KEY = {
+    form_analyze: "formAnalysis",
+    text_enhance: "textEnhancement",
+    cv_parse: "cvParsing",
+    profile_usage: "profileUsage",
+};
+
 class CreditService {
     async getTokenCost(operation) {
         const settings = await settingsRepository.getSettings();
-        return settings.tokenCosts[operation] || 1;
+        const costKey = OPERATION_TO_COST_KEY[operation] || operation;
+        return settings.tokenCosts[costKey] || 1;
     }
 
     async hasEnoughCredits(userId, operation) {

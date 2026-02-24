@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { analyzeForm, enhanceText, parseCV } from "../controllers/form.controller.js";
+import { aiLimiter, aiHourlyLimiter, cvParseLimiter } from "../middleware/rateLimiter.js";
+import { authenticate } from "../middleware/auth.js";
+import { checkCredits } from "../middleware/credits.js";
 
 const router = Router();
 
@@ -52,7 +55,14 @@ const router = Router();
  *       500:
  *         description: AI processing error
  */
-router.post("/analyze", analyzeForm);
+router.post(
+    "/analyze",
+    authenticate,
+    aiLimiter,
+    aiHourlyLimiter,
+    ...checkCredits("form_analyze"),
+    analyzeForm
+);
 
 /**
  * @swagger
@@ -112,7 +122,14 @@ router.post("/analyze", analyzeForm);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post("/enhance", enhanceText);
+router.post(
+    "/enhance",
+    authenticate,
+    aiLimiter,
+    aiHourlyLimiter,
+    ...checkCredits("text_enhance"),
+    enhanceText
+);
 
 /**
  * @swagger
@@ -159,6 +176,13 @@ router.post("/enhance", enhanceText);
  *       400:
  *         description: Invalid request - CV text missing or too short
  */
-router.post("/parse-cv", parseCV);
+router.post(
+    "/parse-cv",
+    authenticate,
+    cvParseLimiter,
+    aiHourlyLimiter,
+    ...checkCredits("cv_parse"),
+    parseCV
+);
 
 export default router;

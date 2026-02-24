@@ -6,8 +6,12 @@ import config from "./config/index.js";
 import swaggerSpec from "./config/swagger.js";
 import routes from "./routes/index.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import { globalLimiter } from "./middleware/rateLimiter.js";
 
 const app = express();
+
+// Trust proxy for rate limiting behind reverse proxy (nginx, cloudflare, etc.)
+app.set("trust proxy", 1);
 
 app.use(
     cors({
@@ -17,6 +21,9 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
+
+// Global rate limiter - applies to all routes
+app.use(globalLimiter);
 
 app.use(
     "/api-docs",
