@@ -53,6 +53,25 @@ export const enhanceText = async (req, res, next) => {
     }
 };
 
+export const generateText = async (req, res, next) => {
+    try {
+        const { fieldLabel, context } = req.body;
+
+        if (!fieldLabel || typeof fieldLabel !== "string") {
+            return badRequest(res, "Field label is required");
+        }
+
+        const result = await aiService.generateText({
+            fieldLabel,
+            context,
+        });
+
+        success(res, result);
+    } catch (err) {
+        next(err);
+    }
+};
+
 export const parseCV = async (req, res, next) => {
     try {
         const { cvText, pdfBase64, docxBase64, fileName } = req.body;

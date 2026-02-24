@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { analyzeForm, enhanceText, parseCV } from "../controllers/form.controller.js";
+import { analyzeForm, enhanceText, generateText, parseCV } from "../controllers/form.controller.js";
 import { aiLimiter, aiHourlyLimiter, cvParseLimiter } from "../middleware/rateLimiter.js";
 import { authenticate } from "../middleware/auth.js";
 import { checkCredits } from "../middleware/credits.js";
@@ -129,6 +129,56 @@ router.post(
     authenticate,
     ...checkCredits("text_enhance"),
     enhanceText
+);
+
+/**
+ * @swagger
+ * /form/generate:
+ *   post:
+ *     summary: Generate text content for an empty form field
+ *     description: Generates appropriate content based on field label and page context
+ *     tags: [Form]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fieldLabel
+ *             properties:
+ *               fieldLabel:
+ *                 type: string
+ *                 description: The label or placeholder of the field
+ *               context:
+ *                 type: string
+ *                 description: Page title or context for generation
+ *     responses:
+ *       200:
+ *         description: Successfully generated text
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     generated:
+ *                       type: string
+ *                       description: The generated text content
+ *       400:
+ *         description: Invalid request - field label missing
+ */
+router.post(
+    "/generate",
+    aiLimiter,
+    aiHourlyLimiter,
+    authenticate,
+    ...checkCredits("text_generate"),
+    generateText
 );
 
 /**

@@ -195,6 +195,37 @@ Return ONLY the improved text. No explanations, no quotes around it, no markdown
         return { original: text, enhanced };
     }
 
+    async generateText({ fieldLabel, context }) {
+        const prompt = this.buildGeneratePrompt({ fieldLabel, context });
+
+        const response = await this.client.chat.completions.create({
+            model: config.ai.model,
+            messages: [{ role: "user", content: prompt }],
+            max_tokens: 2000,
+        });
+
+        const generated = response.choices[0].message.content.trim();
+        return { generated };
+    }
+
+    buildGeneratePrompt({ fieldLabel, context }) {
+        return `You are an expert form-filling assistant. Generate appropriate, professional content for an empty form field.
+
+Field Label: "${fieldLabel}"
+Page/Form Context: "${context || "Unknown"}"
+
+Guidelines:
+1. Generate realistic, professional content appropriate for this field type.
+2. Match the expected format and length for this type of field.
+3. For text areas (like "About", "Description", "Cover Letter", "Summary"), write 2-4 sentences.
+4. For shorter fields (like "Title", "Company", "Role"), keep it brief and specific.
+5. Use a professional, confident tone.
+6. Do NOT use placeholder text like [Your Name] or [Company] - generate actual realistic content.
+7. Do NOT include any explanations or meta-commentary.
+
+Return ONLY the generated text. No quotes, no markdown, no explanations.`;
+    }
+
     buildCVParsePrompt(cvText) {
         return `You are an expert CV/Resume parser with extensive HR and recruitment experience. Your task is to intelligently analyze and extract ALL information from this CV/Resume.
 

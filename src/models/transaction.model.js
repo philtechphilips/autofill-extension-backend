@@ -33,7 +33,13 @@ const transactionSchema = new mongoose.Schema(
             polarCheckoutId: String,
             operation: {
                 type: String,
-                enum: ["formAnalysis", "textEnhancement", "cvParsing", "profileUsage"],
+                enum: [
+                    "formAnalysis",
+                    "textEnhancement",
+                    "textGeneration",
+                    "cvParsing",
+                    "profileUsage",
+                ],
             },
             priceUSD: Number,
             priceNGN: Number,
@@ -85,6 +91,7 @@ class TransactionRepository extends BaseModel {
         const operationNames = {
             formAnalysis: "Form Analysis",
             textEnhancement: "Text Enhancement",
+            textGeneration: "Text Generation",
             cvParsing: "CV Parsing",
             profileUsage: "Profile Usage",
         };

@@ -30,6 +30,7 @@ const DEFAULT_PACKS = [
 const DEFAULT_TOKEN_COSTS = {
     formAnalysis: 1,
     textEnhancement: 1,
+    textGeneration: 1,
     cvParsing: 1,
     profileUsage: 1,
 };
@@ -80,6 +81,11 @@ const tokenCostsSchema = new mongoose.Schema(
             min: 0,
         },
         textEnhancement: {
+            type: Number,
+            default: 1,
+            min: 0,
+        },
+        textGeneration: {
             type: Number,
             default: 1,
             min: 0,
@@ -152,6 +158,9 @@ class SettingsRepository {
         }
         if (tokenCosts.textEnhancement !== undefined) {
             settings.tokenCosts.textEnhancement = tokenCosts.textEnhancement;
+        }
+        if (tokenCosts.textGeneration !== undefined) {
+            settings.tokenCosts.textGeneration = tokenCosts.textGeneration;
         }
         if (tokenCosts.cvParsing !== undefined) {
             settings.tokenCosts.cvParsing = tokenCosts.cvParsing;

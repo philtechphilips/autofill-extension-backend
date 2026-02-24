@@ -73,7 +73,7 @@ export const getSettings = async (req, res) => {
 
 export const updateTokenCosts = async (req, res) => {
     try {
-        const { formAnalysis, textEnhancement, cvParsing, profileUsage } = req.body;
+        const { formAnalysis, textEnhancement, textGeneration, cvParsing, profileUsage } = req.body;
 
         const tokenCosts = {};
         if (formAnalysis !== undefined) {
@@ -87,6 +87,12 @@ export const updateTokenCosts = async (req, res) => {
                 return error(res, "textEnhancement must be a non-negative number", 400);
             }
             tokenCosts.textEnhancement = textEnhancement;
+        }
+        if (textGeneration !== undefined) {
+            if (typeof textGeneration !== "number" || textGeneration < 0) {
+                return error(res, "textGeneration must be a non-negative number", 400);
+            }
+            tokenCosts.textGeneration = textGeneration;
         }
         if (cvParsing !== undefined) {
             if (typeof cvParsing !== "number" || cvParsing < 0) {

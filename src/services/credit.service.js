@@ -5,6 +5,7 @@ import { settingsRepository } from "../models/settings.model.js";
 const OPERATION_TO_COST_KEY = {
     form_analyze: "formAnalysis",
     text_enhance: "textEnhancement",
+    text_generate: "textGeneration",
     cv_parse: "cvParsing",
     profile_usage: "profileUsage",
 };
@@ -29,7 +30,8 @@ class CreditService {
     async getTokenCost(operation) {
         const tokenCosts = await this.getTokenCosts();
         const costKey = OPERATION_TO_COST_KEY[operation] || operation;
-        return tokenCosts[costKey] || 1;
+        const cost = tokenCosts[costKey];
+        return cost !== undefined ? cost : 1;
     }
 
     async checkCreditsAndGetCost(userId, operation) {
@@ -38,8 +40,9 @@ class CreditService {
             userRepository.getCredits(userId),
         ]);
         const costKey = OPERATION_TO_COST_KEY[operation] || operation;
-        const cost = tokenCosts[costKey] || 1;
-        return { hasEnough: credits >= cost, cost, balance: credits };
+        const cost = tokenCosts[costKey] !== undefined ? tokenCosts[costKey] : 1;
+        // If cost is 0, always allow (free operation)
+        return { hasEnough: cost === 0 || credits >= cost, cost, balance: credits };
     }
 
     async hasEnoughCredits(userId, operation) {
@@ -50,7 +53,7 @@ class CreditService {
     async deductCredits(userId, operation) {
         const tokenCosts = await this.getTokenCosts();
         const operationKey = OPERATION_TO_COST_KEY[operation] || operation;
-        const cost = tokenCosts[operationKey] || 1;
+        const cost = tokenCosts[operationKey] !== undefined ? tokenCosts[operationKey] : 1;
 
         if (cost === 0) {
             return { success: true, cost: 0, balance: await userRepository.getCredits(userId) };
