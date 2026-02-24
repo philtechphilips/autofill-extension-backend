@@ -104,8 +104,9 @@ export const updateTokenCosts = async (req, res) => {
         }
 
         const settings = await settingsRepository.updateTokenCosts(tokenCosts);
-        return success(res, settings, "Token costs updated successfully");
+        return success(res, settings);
     } catch (err) {
+        console.error("[Admin] Failed to update token costs:", err);
         return error(res, "Failed to update token costs");
     }
 };
@@ -166,7 +167,7 @@ export const updatePack = async (req, res) => {
             polarSync = await polarService.syncPackToPolar(packId);
         }
 
-        return success(res, { settings, polarSync }, "Pack updated successfully");
+        return success(res, { settings, polarSync });
     } catch (err) {
         return error(res, "Failed to update pack");
     }
@@ -179,7 +180,7 @@ export const syncPacksToPolar = async (req, res) => {
         }
 
         const results = await polarService.syncAllPacksToPolar();
-        return success(res, results, "Packs synced to Polar");
+        return success(res, results);
     } catch (err) {
         return error(res, "Failed to sync packs to Polar");
     }

@@ -3,6 +3,8 @@ import config from "../config/index.js";
 
 const resend = new Resend(config.email.resendApiKey);
 
+const logoUrl = `https://www.autofill.live/_next/image?url=%2Flogo.png&w=32&q=75`;
+
 const baseTemplate = (content) => `
 <!DOCTYPE html>
 <html lang="en">
@@ -24,11 +26,11 @@ const baseTemplate = (content) => `
             <td align="center" style="padding-bottom: 32px;">
               <table role="presentation" cellspacing="0" cellpadding="0">
                 <tr>
-                  <td style="padding-right: 10px;">
-                    <div style="width: 10px; height: 10px; background-color: #000000; border-radius: 50%;"></div>
+                  <td style="padding-right: 12px; vertical-align: middle;">
+                    <img src="${logoUrl}" alt="${config.appName}" width="40" height="40" style="display: block; border-radius: 50%; border: none;" />
                   </td>
-                  <td>
-                    <span style="font-size: 16px; font-weight: 600; color: #000000; letter-spacing: -0.02em; text-transform: uppercase;">${config.appName}</span>
+                  <td style="vertical-align: middle;">
+                    <span style="font-size: 18px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">${config.appName}</span>
                   </td>
                 </tr>
               </table>
@@ -192,6 +194,52 @@ const templates = {
           </tr>
         </table>
     `),
+
+    paymentSuccess: ({ name, packName, credits, amount, newBalance }) =>
+        baseTemplate(`
+        <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          Payment Successful! 🎉
+        </h1>
+        <p style="margin: 0 0 24px; font-size: 15px; color: #52525b; line-height: 1.6;">
+          Hi${name ? ` ${name}` : ""},<br><br>
+          Thank you for your purchase! Your credits have been added to your account.
+        </p>
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #166534;">
+            Order Summary
+          </h3>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size: 14px; color: #52525b;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dcfce7;">Pack</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dcfce7; text-align: right; font-weight: 500; color: #000000;">${packName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dcfce7;">Credits Added</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dcfce7; text-align: right; font-weight: 500; color: #000000;">+${credits}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dcfce7;">Amount Paid</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dcfce7; text-align: right; font-weight: 500; color: #000000;">$${amount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; font-weight: 600; color: #166534;">New Balance</td>
+              <td style="padding: 8px 0; text-align: right; font-weight: 600; color: #166534;">${newBalance} credits</td>
+            </tr>
+          </table>
+        </div>
+        <p style="margin: 0 0 24px; font-size: 14px; color: #52525b; line-height: 1.6;">
+          Your credits never expire and can be used for AI-powered form autofill, text enhancement, and CV parsing.
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <a href="${config.frontendUrl}/dashboard/billing" style="${buttonStyle}">
+                View Your Balance
+              </a>
+            </td>
+          </tr>
+        </table>
+    `),
 };
 
 export const sendVerificationEmail = async (to, { name, verificationUrl }) => {
@@ -286,9 +334,36 @@ export const sendPasswordChangedEmail = async (to, { name }) => {
     }
 };
 
+export const sendPaymentSuccessEmail = async (
+    to,
+    { name, packName, credits, amount, newBalance }
+) => {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `Payment Successful - ${credits} credits added! - ${config.appName}`,
+            html: templates.paymentSuccess({ name, packName, credits, amount, newBalance }),
+        });
+
+        if (error) {
+            console.error("[Email] Payment success email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Payment success email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Payment success email error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
 export default {
     sendVerificationEmail,
     sendWelcomeEmail,
     sendForgotPasswordEmail,
     sendPasswordChangedEmail,
+    sendPaymentSuccessEmail,
 };

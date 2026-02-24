@@ -143,6 +143,10 @@ class SettingsRepository {
     async updateTokenCosts(tokenCosts) {
         const settings = await this.getSettings();
 
+        if (!settings.tokenCosts) {
+            settings.tokenCosts = { ...DEFAULT_TOKEN_COSTS };
+        }
+
         if (tokenCosts.formAnalysis !== undefined) {
             settings.tokenCosts.formAnalysis = tokenCosts.formAnalysis;
         }
@@ -156,6 +160,7 @@ class SettingsRepository {
             settings.tokenCosts.profileUsage = tokenCosts.profileUsage;
         }
 
+        settings.markModified("tokenCosts");
         await settings.save();
         return settings;
     }

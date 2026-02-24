@@ -155,7 +155,7 @@ class PolarService {
         const updatedPack = await settingsRepository.getPack(packId);
 
         const checkout = await this.client.checkouts.create({
-            productId: updatedPack.polarProductId,
+            products: [updatedPack.polarProductId],
             successUrl: `${config.polar.successUrl}&packId=${packId}`,
             customerEmail: userEmail,
             metadata: {
@@ -183,18 +183,35 @@ class PolarService {
         return this.client.orders.get({ id: orderId });
     }
 
-    verifyWebhookSignature(payload, signature) {
+    verifyWebhookSignature(payload, signature, webhookId, timestamp) {
         if (!config.polar.webhookSecret) {
             console.warn("[Polar] Webhook secret not configured");
             return false;
         }
 
-        const expectedSignature = crypto
-            .createHmac("sha256", config.polar.webhookSecret)
-            .update(payload)
-            .digest("hex");
+        try {
+            const signedPayload = `${webhookId}.${timestamp}.${payload}`;
 
-        return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+            const expectedSignature = crypto
+                .createHmac("sha256", config.polar.webhookSecret)
+                .update(signedPayload)
+                .digest("base64");
+
+            const actualSignature = signature.replace("v1,", "");
+
+            const expectedBuffer = Buffer.from(expectedSignature, "base64");
+            const actualBuffer = Buffer.from(actualSignature, "base64");
+
+            if (expectedBuffer.length !== actualBuffer.length) {
+                console.warn("[Polar] Signature length mismatch");
+                return false;
+            }
+
+            return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
+        } catch (err) {
+            console.error("[Polar] Signature verification error:", err.message);
+            return false;
+        }
     }
 }
 
