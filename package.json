@@ -21,6 +21,7 @@
   "license": "ISC",
   "description": "Autofill backend API",
   "dependencies": {
+    "@polar-sh/sdk": "^0.43.1",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

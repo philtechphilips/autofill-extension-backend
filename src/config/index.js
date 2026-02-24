@@ -37,6 +37,15 @@ const config = {
     cors: {
         origin: process.env.CORS_ORIGIN || "*",
     },
+
+    polar: {
+        accessToken: process.env.POLAR_ACCESS_TOKEN,
+        webhookSecret: process.env.POLAR_WEBHOOK_SECRET,
+        organizationId: process.env.POLAR_ORGANIZATION_ID,
+        server: process.env.POLAR_SERVER,
+        successUrl: process.env.POLAR_SUCCESS_URL,
+        cancelUrl: process.env.POLAR_CANCEL_URL,
+    },
 };
 
 if (config.env === "production" && !process.env.JWT_SECRET) {

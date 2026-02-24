@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema(
             trim: true,
             default: null,
         },
+        role: {
+            type: String,
+            enum: ["user", "admin"],
+            default: "user",
+        },
         password: {
             type: String,
             required: true,
@@ -61,6 +66,15 @@ const userSchema = new mongoose.Schema(
         refreshTokens: {
             type: [refreshTokenSchema],
             default: [],
+        },
+        credits: {
+            type: Number,
+            default: 0,
+            min: 0,
+        },
+        polarCustomerId: {
+            type: String,
+            default: null,
         },
     },
     {
@@ -126,6 +140,41 @@ class UserRepository extends BaseModel {
         if (!user) return null;
 
         return user.refreshTokens.find((t) => t.id === tokenId && t.expiresAt > Date.now()) || null;
+    }
+
+    async addCredits(userId, amount) {
+        const result = await this.model.findByIdAndUpdate(
+            userId,
+            { $inc: { credits: amount } },
+            { new: true }
+        );
+        return result;
+    }
+
+    async deductCredits(userId, amount) {
+        const user = await this.findById(userId);
+        if (!user || user.credits < amount) {
+            return null;
+        }
+        const result = await this.model.findByIdAndUpdate(
+            userId,
+            { $inc: { credits: -amount } },
+            { new: true }
+        );
+        return result;
+    }
+
+    async getCredits(userId) {
+        const user = await this.findById(userId);
+        return user ? user.credits : 0;
+    }
+
+    async setPolarCustomerId(userId, polarCustomerId) {
+        return this.findByIdAndUpdate(userId, { polarCustomerId });
+    }
+
+    async findByPolarCustomerId(polarCustomerId) {
+        return this.findOne({ polarCustomerId });
     }
 }
 
