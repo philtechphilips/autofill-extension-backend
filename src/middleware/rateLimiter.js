@@ -160,6 +160,21 @@ export const strictApiLimiter = rateLimit({
     },
 });
 
+// Contact form - strict to prevent spam
+export const contactLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 3, // 3 messages per hour per IP
+    message: {
+        success: false,
+        error: "Too many messages sent. Please try again in an hour.",
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: (req, res) => {
+        error(res, "Too many messages sent. Please try again in an hour.", 429);
+    },
+});
+
 // Global rate limiter - absolute maximum for any IP
 export const globalLimiter = rateLimit({
     windowMs: 60 * 1000, // 1 minute
@@ -182,5 +197,6 @@ export default {
     webhookLimiter,
     apiLimiter,
     strictApiLimiter,
+    contactLimiter,
     globalLimiter,
 };

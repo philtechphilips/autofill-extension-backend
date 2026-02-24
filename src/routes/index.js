@@ -7,6 +7,7 @@ import analyticsRoutes from "./analytics.routes.js";
 import adminRoutes from "./admin.routes.js";
 import pricingRoutes from "./pricing.routes.js";
 import paymentRoutes from "./payment.routes.js";
+import contactRoutes from "./contact.routes.js";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/analytics", analyticsRoutes);
 router.use("/admin", adminRoutes);
 router.use("/pricing", pricingRoutes);
 router.use("/payment", paymentRoutes);
+router.use("/contact", contactRoutes);
 
 export default router;

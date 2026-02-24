@@ -258,6 +258,45 @@ const templates = {
         </table>
     `),
 
+    contactMessage: ({ name, email, message }) =>
+        baseTemplate(`
+        <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          New Contact Message
+        </h1>
+        <p style="margin: 0 0 24px; font-size: 15px; color: #52525b; line-height: 1.6;">
+          You received a new message from the contact form on ${config.appName}.
+        </p>
+        <div style="background-color: #f4f4f5; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size: 14px; color: #52525b;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7; font-weight: 600; color: #71717a;">From</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7; text-align: right; font-weight: 500; color: #000000;">${name}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7; font-weight: 600; color: #71717a;">Email</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #e4e4e7; text-align: right;">
+                <a href="mailto:${email}" style="color: #0070f3; text-decoration: none;">${email}</a>
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div style="background-color: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 12px; font-size: 13px; font-weight: 600; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">
+            Message
+          </h3>
+          <p style="margin: 0; font-size: 15px; color: #000000; line-height: 1.7; white-space: pre-wrap;">${message}</p>
+        </div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <a href="mailto:${email}?subject=Re: Your message to ${config.appName}" style="${buttonStyle}">
+                Reply to ${name}
+              </a>
+            </td>
+          </tr>
+        </table>
+    `),
+
     adminPurchaseNotification: ({
         customerName,
         customerEmail,
@@ -434,6 +473,35 @@ export const sendPaymentSuccessEmail = async (
     }
 };
 
+export const sendContactMessage = async ({ name, email, message }) => {
+    const adminEmail = config.email.adminEmail;
+    if (!adminEmail) {
+        console.log("[Email] Admin email not configured, skipping contact message");
+        return { success: false, error: "Admin email not configured" };
+    }
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to: adminEmail,
+            replyTo: email,
+            subject: `Contact Form: Message from ${name} - ${config.appName}`,
+            html: templates.contactMessage({ name, email, message }),
+        });
+
+        if (error) {
+            console.error("[Email] Contact message failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Contact message sent from ${email}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Contact message error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
 export const sendAdminPurchaseNotification = async ({
     customerName,
     customerEmail,
@@ -483,5 +551,6 @@ export default {
     sendForgotPasswordEmail,
     sendPasswordChangedEmail,
     sendPaymentSuccessEmail,
+    sendContactMessage,
     sendAdminPurchaseNotification,
 };
