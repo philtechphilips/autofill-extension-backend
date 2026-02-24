@@ -86,6 +86,13 @@ Only return the JSON object. No explanations, no markdown blocks.
     }
 
     async analyzeForm(formData) {
+        const { fields } = formData;
+
+        // For large forms (>20 fields), split into parallel batches for faster processing
+        if (fields && fields.length > 20) {
+            return this.analyzeFormParallel(formData);
+        }
+
         // Add random seed for variety when no profile is selected
         const randomSeed = Date.now() + Math.floor(Math.random() * 100000);
         const prompt = this.buildPrompt({ ...formData, randomSeed });
@@ -96,11 +103,44 @@ Only return the JSON object. No explanations, no markdown blocks.
         const response = await this.client.chat.completions.create({
             model: config.ai.model,
             messages: [{ role: "user", content: prompt }],
-            temperature: temperature,
+            temperature,
+            max_tokens: 4000,
         });
 
         const content = response.choices[0].message.content;
         return parseAIResponse(content);
+    }
+
+    async analyzeFormParallel(formData) {
+        const { fields, ...rest } = formData;
+        const BATCH_SIZE = 15;
+        const batches = [];
+
+        // Split fields into batches
+        for (let i = 0; i < fields.length; i += BATCH_SIZE) {
+            batches.push(fields.slice(i, i + BATCH_SIZE));
+        }
+
+        // Process batches in parallel
+        const results = await Promise.all(
+            batches.map(async (batchFields) => {
+                const randomSeed = Date.now() + Math.floor(Math.random() * 100000);
+                const prompt = this.buildPrompt({ ...rest, fields: batchFields, randomSeed });
+                const temperature = formData.profileData ? 0.3 : 0.9;
+
+                const response = await this.client.chat.completions.create({
+                    model: config.ai.model,
+                    messages: [{ role: "user", content: prompt }],
+                    temperature,
+                    max_tokens: 2000,
+                });
+
+                return parseAIResponse(response.choices[0].message.content);
+            })
+        );
+
+        // Merge all batch results into one object
+        return results.reduce((merged, result) => ({ ...merged, ...result }), {});
     }
 
     buildEnhancePrompt({ text, fieldLabel, context, enhanceType }) {
@@ -148,6 +188,7 @@ Return ONLY the improved text. No explanations, no quotes around it, no markdown
         const response = await this.client.chat.completions.create({
             model: config.ai.model,
             messages: [{ role: "user", content: prompt }],
+            max_tokens: 2000,
         });
 
         const enhanced = response.choices[0].message.content.trim();
@@ -370,6 +411,8 @@ Return ONLY valid JSON. No markdown, no explanations.`;
         const response = await this.client.chat.completions.create({
             model: config.ai.model,
             messages: [{ role: "user", content: prompt }],
+            max_tokens: 4000,
+            temperature: 0.1, // Low temperature for accurate extraction
         });
 
         const content = response.choices[0].message.content;

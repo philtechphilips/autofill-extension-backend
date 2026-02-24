@@ -171,24 +171,31 @@ export const register = async ({ email, password, name }) => {
             emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
         });
 
-        // Record the bonus transaction if free tokens > 0
-        if (freeTokens > 0) {
-            await transactionRepository.createBonus(
-                user._id,
-                freeTokens,
-                freeTokens,
-                `${welcomePack?.name || "Welcome Pack"} - Free signup credits`
-            );
-        }
-
+        // Fire-and-forget: Record bonus transaction and send verification email in parallel
         const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
-        await emailService.sendVerificationEmail(user.email, {
-            name: user.name,
-            verificationUrl,
-        });
 
-        const accessToken = generateAccessToken(user);
-        const refreshToken = await generateRefreshToken(user);
+        // Non-blocking operations
+        if (freeTokens > 0) {
+            transactionRepository
+                .createBonus(
+                    user._id,
+                    freeTokens,
+                    freeTokens,
+                    `${welcomePack?.name || "Welcome Pack"} - Free signup credits`
+                )
+                .catch((err) => console.error("[Auth] Failed to log signup bonus:", err.message));
+        }
+        emailService
+            .sendVerificationEmail(user.email, { name: user.name, verificationUrl })
+            .catch((err) =>
+                console.error("[Auth] Failed to send verification email:", err.message)
+            );
+
+        // Generate tokens in parallel
+        const [accessToken, refreshToken] = await Promise.all([
+            Promise.resolve(generateAccessToken(user)),
+            generateRefreshToken(user),
+        ]);
 
         return {
             user: sanitizeUser(user),
@@ -228,8 +235,11 @@ export const login = async ({ email, password }) => {
         await user.save();
     }
 
-    const accessToken = generateAccessToken(user);
-    const refreshToken = await generateRefreshToken(user);
+    // Generate tokens in parallel
+    const [accessToken, refreshToken] = await Promise.all([
+        Promise.resolve(generateAccessToken(user)),
+        generateRefreshToken(user),
+    ]);
 
     return {
         user: sanitizeUser(user),
@@ -260,10 +270,10 @@ export const verifyEmail = async (token) => {
     user.emailVerificationExpires = null;
     await user.save();
 
-    await emailService.sendWelcomeEmail(user.email, {
-        name: user.name,
-        freeCredits: user.credits || 0,
-    });
+    // Fire-and-forget welcome email
+    emailService
+        .sendWelcomeEmail(user.email, { name: user.name, freeCredits: user.credits || 0 })
+        .catch((err) => console.error("[Auth] Failed to send welcome email:", err.message));
 
     return {
         user: sanitizeUser(user),
@@ -295,11 +305,11 @@ export const resendVerificationEmail = async (email) => {
     user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save();
 
+    // Fire-and-forget verification email
     const verificationUrl = `${config.frontendUrl}/verify-email?token=${verificationToken}`;
-    await emailService.sendVerificationEmail(user.email, {
-        name: user.name,
-        verificationUrl,
-    });
+    emailService
+        .sendVerificationEmail(user.email, { name: user.name, verificationUrl })
+        .catch((err) => console.error("[Auth] Failed to send verification email:", err.message));
 
     return {
         success: true,
@@ -327,11 +337,11 @@ export const forgotPassword = async (email) => {
     user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
     await user.save();
 
+    // Fire-and-forget password reset email
     const resetUrl = `${config.frontendUrl}/reset-password?token=${resetToken}`;
-    await emailService.sendForgotPasswordEmail(user.email, {
-        name: user.name,
-        resetUrl,
-    });
+    emailService
+        .sendForgotPasswordEmail(user.email, { name: user.name, resetUrl })
+        .catch((err) => console.error("[Auth] Failed to send password reset email:", err.message));
 
     return {
         success: true,
@@ -366,7 +376,12 @@ export const resetPassword = async (token, newPassword) => {
     user.refreshTokens = [];
     await user.save();
 
-    await emailService.sendPasswordChangedEmail(user.email, { name: user.name });
+    // Fire-and-forget password changed email
+    emailService
+        .sendPasswordChangedEmail(user.email, { name: user.name })
+        .catch((err) =>
+            console.error("[Auth] Failed to send password changed email:", err.message)
+        );
 
     return {
         success: true,
@@ -396,7 +411,12 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
     user.refreshTokens = [];
     await user.save();
 
-    await emailService.sendPasswordChangedEmail(user.email, { name: user.name });
+    // Fire-and-forget password changed email
+    emailService
+        .sendPasswordChangedEmail(user.email, { name: user.name })
+        .catch((err) =>
+            console.error("[Auth] Failed to send password changed email:", err.message)
+        );
 
     return {
         success: true,
@@ -428,10 +448,12 @@ export const refreshAccessToken = async (refreshToken) => {
             return { error: "Token has been revoked", status: 401 };
         }
 
-        await userRepository.removeRefreshToken(user._id || user.id, decoded.jti);
-
-        const newAccessToken = generateAccessToken(user);
-        const newRefreshToken = await generateRefreshToken(user);
+        // Remove old token and generate new tokens in parallel
+        const [, newAccessToken, newRefreshToken] = await Promise.all([
+            userRepository.removeRefreshToken(user._id || user.id, decoded.jti),
+            Promise.resolve(generateAccessToken(user)),
+            generateRefreshToken(user),
+        ]);
 
         return {
             user: sanitizeUser(user),

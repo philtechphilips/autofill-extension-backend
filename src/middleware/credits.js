@@ -7,12 +7,13 @@ export const requireCredits = (operation) => {
             return error(res, "Authentication required", 401);
         }
 
-        const hasCredits = await creditService.hasEnoughCredits(req.user.id, operation);
+        // Single call to check credits and get cost/balance
+        const { hasEnough, cost, balance } = await creditService.checkCreditsAndGetCost(
+            req.user.id,
+            operation
+        );
 
-        if (!hasCredits) {
-            const cost = await creditService.getTokenCost(operation);
-            const balance = await creditService.getBalance(req.user.id);
-
+        if (!hasEnough) {
             return error(res, "Insufficient credits", 402, {
                 required: cost,
                 available: balance,
@@ -21,6 +22,7 @@ export const requireCredits = (operation) => {
         }
 
         req.creditOperation = operation;
+        req.creditCost = cost;
         next();
     };
 };

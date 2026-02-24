@@ -106,6 +106,11 @@ export const updateTokenCosts = async (req, res) => {
         }
 
         const settings = await settingsRepository.updateTokenCosts(tokenCosts);
+
+        // Invalidate credit service cache
+        const { creditService } = await import("../services/credit.service.js");
+        creditService.invalidateCache();
+
         return success(res, settings);
     } catch (err) {
         console.error("[Admin] Failed to update token costs:", err);

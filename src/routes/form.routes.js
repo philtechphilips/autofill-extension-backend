@@ -57,9 +57,9 @@ const router = Router();
  */
 router.post(
     "/analyze",
-    authenticate,
     aiLimiter,
     aiHourlyLimiter,
+    authenticate,
     ...checkCredits("form_analyze"),
     analyzeForm
 );
@@ -124,9 +124,9 @@ router.post(
  */
 router.post(
     "/enhance",
-    authenticate,
     aiLimiter,
     aiHourlyLimiter,
+    authenticate,
     ...checkCredits("text_enhance"),
     enhanceText
 );
@@ -178,9 +178,9 @@ router.post(
  */
 router.post(
     "/parse-cv",
-    authenticate,
     cvParseLimiter,
     aiHourlyLimiter,
+    authenticate,
     ...checkCredits("cv_parse"),
     parseCV
 );
