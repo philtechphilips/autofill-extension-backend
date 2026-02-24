@@ -47,11 +47,12 @@ export const createCheckout = async (req, res) => {
 export const getCredits = async (req, res) => {
     try {
         const userId = req.user.id;
-        const [credits, stats, lastPack] = await Promise.all([
+        const [credits, lastPack] = await Promise.all([
             userRepository.getCredits(userId),
-            transactionRepository.getUserStats(userId),
             transactionRepository.getLastPurchasedPack(userId),
         ]);
+
+        const stats = await transactionRepository.getUserStatsWithBalance(userId, credits);
 
         return success(res, {
             credits,

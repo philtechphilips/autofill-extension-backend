@@ -110,11 +110,12 @@ class CreditService {
     }
 
     async getUsageSummary(userId) {
-        const [credits, stats, tokenCosts] = await Promise.all([
+        const [credits, tokenCosts] = await Promise.all([
             userRepository.getCredits(userId),
-            transactionRepository.getUserStats(userId),
             settingsRepository.getTokenCosts(),
         ]);
+
+        const stats = await transactionRepository.getUserStatsWithBalance(userId, credits);
 
         return {
             currentBalance: credits,

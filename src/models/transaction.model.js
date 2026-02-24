@@ -176,13 +176,26 @@ class TransactionRepository extends BaseModel {
                 result.totalUsed = Math.abs(stat.total);
                 result.usageCount = stat.count;
             } else if (stat._id === "refund") {
-                result.totalRefunded = stat.total;
+                result.totalRefunded = Math.abs(stat.total);
             } else if (stat._id === "bonus") {
                 result.totalBonus = stat.total;
             }
         });
 
         return result;
+    }
+
+    async getUserStatsWithBalance(userId, currentBalance) {
+        const stats = await this.getUserStats(userId);
+
+        const totalCreditsIn = stats.totalPurchased + stats.totalBonus + stats.totalRefunded;
+        const calculatedUsed = totalCreditsIn - currentBalance;
+
+        if (calculatedUsed > 0 && calculatedUsed !== stats.totalUsed) {
+            stats.totalUsed = calculatedUsed;
+        }
+
+        return stats;
     }
 
     async getLastPurchasedPack(userId) {
