@@ -5,20 +5,22 @@ import config from "../config/index.js";
 const REFRESH_TOKEN_COOKIE = "refreshToken";
 
 const setRefreshTokenCookie = (res, token) => {
+    const isProduction = config.env === "production";
     res.cookie(REFRESH_TOKEN_COOKIE, token, {
         httpOnly: true,
-        secure: config.env === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "strict" : "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
         path: "/api/v1/auth",
     });
 };
 
 const clearRefreshTokenCookie = (res) => {
+    const isProduction = config.env === "production";
     res.clearCookie(REFRESH_TOKEN_COOKIE, {
         httpOnly: true,
-        secure: config.env === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "strict" : "lax",
         path: "/api/v1/auth",
     });
 };

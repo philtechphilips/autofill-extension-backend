@@ -30,8 +30,9 @@ const config = {
 
     email: {
         resendApiKey: process.env.RESEND_API_KEY,
-        from: process.env.EMAIL_FROM || "Autofill.AI <pelumiisola87@gmail.com>",
-        replyTo: process.env.EMAIL_REPLY_TO || "support@autofill.ai",
+        from: process.env.EMAIL_FROM || "Autofill.AI <hello@autofill.live>",
+        replyTo: process.env.EMAIL_REPLY_TO || "hello@autofill.live",
+        adminEmail: process.env.ADMIN_EMAIL,
     },
 
     cors: {

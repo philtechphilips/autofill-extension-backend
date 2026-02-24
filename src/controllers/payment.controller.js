@@ -2,7 +2,10 @@ import { polarService } from "../services/polar.service.js";
 import { settingsRepository } from "../models/settings.model.js";
 import { userRepository } from "../models/user.model.js";
 import { transactionRepository } from "../models/transaction.model.js";
-import { sendPaymentSuccessEmail } from "../services/email.service.js";
+import {
+    sendPaymentSuccessEmail,
+    sendAdminPurchaseNotification,
+} from "../services/email.service.js";
 import { success, error } from "../utils/response.js";
 
 export const createCheckout = async (req, res) => {
@@ -205,21 +208,37 @@ async function handleOrderPaid(orderData) {
         `[Webhook] SUCCESS: Added ${tokensToAdd} credits to user ${userId} for order ${orderId}. New balance: ${user.credits}`
     );
 
-    // Send payment success email
+    // Send emails
+    const customerEmail = user.email || orderData.customer?.email;
+    const amountPaid = ((orderData.total_amount || orderData.amount || 0) / 100).toFixed(2);
+
+    // Send payment success email to customer
     try {
-        const customerEmail = user.email || orderData.customer?.email;
         if (customerEmail) {
-            const amountPaid = (orderData.total_amount || orderData.amount || 0) / 100;
             await sendPaymentSuccessEmail(customerEmail, {
                 name: user.name || user.firstName,
                 packName: packData.name,
                 credits: tokensToAdd,
-                amount: amountPaid.toFixed(2),
+                amount: amountPaid,
                 newBalance: user.credits,
             });
         }
     } catch (emailErr) {
         console.error(`[Webhook] Failed to send payment success email:`, emailErr.message);
+    }
+
+    // Send notification to admin
+    try {
+        await sendAdminPurchaseNotification({
+            customerName: user.name || user.firstName,
+            customerEmail: customerEmail,
+            packName: packData.name,
+            credits: tokensToAdd,
+            amount: amountPaid,
+            orderId: orderId,
+        });
+    } catch (emailErr) {
+        console.error(`[Webhook] Failed to send admin notification:`, emailErr.message);
     }
 }
 

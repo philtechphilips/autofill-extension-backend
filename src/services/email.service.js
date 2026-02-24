@@ -240,6 +240,63 @@ const templates = {
           </tr>
         </table>
     `),
+
+    adminPurchaseNotification: ({
+        customerName,
+        customerEmail,
+        packName,
+        credits,
+        amount,
+        orderId,
+    }) =>
+        baseTemplate(`
+        <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          New Purchase! 💰
+        </h1>
+        <p style="margin: 0 0 24px; font-size: 15px; color: #52525b; line-height: 1.6;">
+          A customer just made a purchase on ${config.appName}.
+        </p>
+        <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 16px; font-size: 14px; font-weight: 600; color: #1e40af;">
+            Purchase Details
+          </h3>
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size: 14px; color: #52525b;">
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe;">Customer</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe; text-align: right; font-weight: 500; color: #000000;">${customerName || "N/A"}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe;">Email</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe; text-align: right; font-weight: 500; color: #000000;">${customerEmail}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe;">Pack</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe; text-align: right; font-weight: 500; color: #000000;">${packName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe;">Credits</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe; text-align: right; font-weight: 500; color: #000000;">${credits}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe;">Amount</td>
+              <td style="padding: 8px 0; border-bottom: 1px solid #dbeafe; text-align: right; font-weight: 600; color: #166534;">$${amount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px 0;">Order ID</td>
+              <td style="padding: 8px 0; text-align: right; font-size: 12px; color: #71717a;">${orderId}</td>
+            </tr>
+          </table>
+        </div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <a href="${config.frontendUrl}/admin" style="${buttonStyle}">
+                View Admin Dashboard
+              </a>
+            </td>
+          </tr>
+        </table>
+    `),
 };
 
 export const sendVerificationEmail = async (to, { name, verificationUrl }) => {
@@ -360,10 +417,54 @@ export const sendPaymentSuccessEmail = async (
     }
 };
 
+export const sendAdminPurchaseNotification = async ({
+    customerName,
+    customerEmail,
+    packName,
+    credits,
+    amount,
+    orderId,
+}) => {
+    const adminEmail = config.email.adminEmail;
+    if (!adminEmail) {
+        console.log("[Email] Admin email not configured, skipping purchase notification");
+        return { success: false, error: "Admin email not configured" };
+    }
+
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to: adminEmail,
+            replyTo: config.email.replyTo,
+            subject: `💰 New Purchase: ${packName} ($${amount}) - ${config.appName}`,
+            html: templates.adminPurchaseNotification({
+                customerName,
+                customerEmail,
+                packName,
+                credits,
+                amount,
+                orderId,
+            }),
+        });
+
+        if (error) {
+            console.error("[Email] Admin purchase notification failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Admin purchase notification sent to ${adminEmail}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Admin purchase notification error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
 export default {
     sendVerificationEmail,
     sendWelcomeEmail,
     sendForgotPasswordEmail,
     sendPasswordChangedEmail,
     sendPaymentSuccessEmail,
+    sendAdminPurchaseNotification,
 };
