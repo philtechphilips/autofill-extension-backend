@@ -1,6 +1,13 @@
 import { Router } from "express";
 import analyticsController from "../controllers/analytics.controller.js";
 import { authenticate } from "../middleware/auth.js";
+import { validateBody, validateQuery } from "../middleware/validate.js";
+import {
+    recordEventSchema,
+    getEventsQuerySchema,
+    getRecentQuerySchema,
+    getDailyQuerySchema,
+} from "../validation/schemas.js";
 
 const router = Router();
 
@@ -48,7 +55,12 @@ const router = Router();
  *       401:
  *         description: Not authenticated
  */
-router.post("/event", authenticate, analyticsController.recordEvent);
+router.post(
+    "/event",
+    authenticate,
+    validateBody(recordEventSchema),
+    analyticsController.recordEvent
+);
 
 /**
  * @swagger
@@ -119,7 +131,12 @@ router.get("/stats", authenticate, analyticsController.getStats);
  *       401:
  *         description: Not authenticated
  */
-router.get("/events", authenticate, analyticsController.getEvents);
+router.get(
+    "/events",
+    authenticate,
+    validateQuery(getEventsQuerySchema),
+    analyticsController.getEvents
+);
 
 /**
  * @swagger
@@ -142,7 +159,12 @@ router.get("/events", authenticate, analyticsController.getEvents);
  *       401:
  *         description: Not authenticated
  */
-router.get("/recent", authenticate, analyticsController.getRecentEvents);
+router.get(
+    "/recent",
+    authenticate,
+    validateQuery(getRecentQuerySchema),
+    analyticsController.getRecentEvents
+);
 
 /**
  * @swagger
@@ -165,6 +187,11 @@ router.get("/recent", authenticate, analyticsController.getRecentEvents);
  *       401:
  *         description: Not authenticated
  */
-router.get("/daily", authenticate, analyticsController.getDailyStats);
+router.get(
+    "/daily",
+    authenticate,
+    validateQuery(getDailyQuerySchema),
+    analyticsController.getDailyStats
+);
 
 export default router;

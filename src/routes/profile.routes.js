@@ -2,6 +2,12 @@ import { Router } from "express";
 import profileController from "../controllers/profile.controller.js";
 import { authenticate } from "../middleware/auth.js";
 import { apiLimiter, strictApiLimiter } from "../middleware/rateLimiter.js";
+import { validateBody } from "../middleware/validate.js";
+import {
+    createProfileSchema,
+    updateProfileSchema,
+    syncProfilesSchema,
+} from "../validation/schemas.js";
 
 const router = Router();
 
@@ -59,7 +65,13 @@ router.get("/", authenticate, apiLimiter, profileController.getProfiles);
  *       409:
  *         description: Profile name already exists
  */
-router.post("/", authenticate, strictApiLimiter, profileController.createProfile);
+router.post(
+    "/",
+    authenticate,
+    strictApiLimiter,
+    validateBody(createProfileSchema),
+    profileController.createProfile
+);
 
 /**
  * @swagger
@@ -89,7 +101,13 @@ router.post("/", authenticate, strictApiLimiter, profileController.createProfile
  *       400:
  *         description: Invalid input
  */
-router.post("/sync", authenticate, strictApiLimiter, profileController.syncProfiles);
+router.post(
+    "/sync",
+    authenticate,
+    strictApiLimiter,
+    validateBody(syncProfilesSchema),
+    profileController.syncProfiles
+);
 
 /**
  * @swagger
@@ -141,7 +159,13 @@ router.get("/:id", authenticate, apiLimiter, profileController.getProfile);
  *       404:
  *         description: Profile not found
  */
-router.put("/:id", authenticate, strictApiLimiter, profileController.updateProfile);
+router.put(
+    "/:id",
+    authenticate,
+    strictApiLimiter,
+    validateBody(updateProfileSchema),
+    profileController.updateProfile
+);
 
 /**
  * @swagger

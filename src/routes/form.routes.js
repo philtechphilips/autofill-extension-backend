@@ -3,6 +3,13 @@ import { analyzeForm, enhanceText, generateText, parseCV } from "../controllers/
 import { aiLimiter, aiHourlyLimiter, cvParseLimiter } from "../middleware/rateLimiter.js";
 import { authenticate } from "../middleware/auth.js";
 import { checkCredits } from "../middleware/credits.js";
+import { validateBody } from "../middleware/validate.js";
+import {
+    analyzeFormSchema,
+    enhanceTextSchema,
+    generateTextSchema,
+    parseCVSchema,
+} from "../validation/schemas.js";
 
 const router = Router();
 
@@ -60,6 +67,7 @@ router.post(
     aiLimiter,
     aiHourlyLimiter,
     authenticate,
+    validateBody(analyzeFormSchema),
     ...checkCredits("form_analyze"),
     analyzeForm
 );
@@ -127,6 +135,7 @@ router.post(
     aiLimiter,
     aiHourlyLimiter,
     authenticate,
+    validateBody(enhanceTextSchema),
     ...checkCredits("text_enhance"),
     enhanceText
 );
@@ -177,6 +186,7 @@ router.post(
     aiLimiter,
     aiHourlyLimiter,
     authenticate,
+    validateBody(generateTextSchema),
     ...checkCredits("text_generate"),
     generateText
 );
@@ -231,6 +241,7 @@ router.post(
     cvParseLimiter,
     aiHourlyLimiter,
     authenticate,
+    validateBody(parseCVSchema),
     ...checkCredits("cv_parse"),
     parseCV
 );

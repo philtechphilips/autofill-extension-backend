@@ -2,6 +2,18 @@ import { Router } from "express";
 import authController from "../controllers/auth.controller.js";
 import { authenticate, optionalAuth } from "../middleware/auth.js";
 import { authLimiter, registerLimiter } from "../middleware/rateLimiter.js";
+import { validateBody } from "../middleware/validate.js";
+import {
+    registerSchema,
+    loginSchema,
+    verifyEmailSchema,
+    resendVerificationSchema,
+    forgotPasswordSchema,
+    resetPasswordSchema,
+    changePasswordSchema,
+    refreshSchema,
+    logoutSchema,
+} from "../validation/schemas.js";
 
 const router = Router();
 
@@ -30,7 +42,7 @@ const router = Router();
  *       409:
  *         description: Email already registered
  */
-router.post("/register", registerLimiter, authController.register);
+router.post("/register", registerLimiter, validateBody(registerSchema), authController.register);
 
 /**
  * @swagger
@@ -55,7 +67,7 @@ router.post("/register", registerLimiter, authController.register);
  *       401:
  *         description: Invalid credentials
  */
-router.post("/login", authLimiter, authController.login);
+router.post("/login", authLimiter, validateBody(loginSchema), authController.login);
 
 /**
  * @swagger
@@ -82,7 +94,7 @@ router.post("/login", authLimiter, authController.login);
  *       400:
  *         description: Invalid or expired token
  */
-router.post("/verify-email", authController.verifyEmail);
+router.post("/verify-email", validateBody(verifyEmailSchema), authController.verifyEmail);
 
 /**
  * @swagger
@@ -109,7 +121,12 @@ router.post("/verify-email", authController.verifyEmail);
  *       400:
  *         description: Email already verified or invalid format
  */
-router.post("/resend-verification", authLimiter, authController.resendVerificationEmail);
+router.post(
+    "/resend-verification",
+    authLimiter,
+    validateBody(resendVerificationSchema),
+    authController.resendVerificationEmail
+);
 
 /**
  * @swagger
@@ -134,7 +151,12 @@ router.post("/resend-verification", authLimiter, authController.resendVerificati
  *       200:
  *         description: Reset email sent (if account exists)
  */
-router.post("/forgot-password", authLimiter, authController.forgotPassword);
+router.post(
+    "/forgot-password",
+    authLimiter,
+    validateBody(forgotPasswordSchema),
+    authController.forgotPassword
+);
 
 /**
  * @swagger
@@ -167,7 +189,12 @@ router.post("/forgot-password", authLimiter, authController.forgotPassword);
  *       400:
  *         description: Invalid/expired token or weak password
  */
-router.post("/reset-password", authLimiter, authController.resetPassword);
+router.post(
+    "/reset-password",
+    authLimiter,
+    validateBody(resetPasswordSchema),
+    authController.resetPassword
+);
 
 /**
  * @swagger
@@ -201,7 +228,12 @@ router.post("/reset-password", authLimiter, authController.resetPassword);
  *       401:
  *         description: Current password incorrect or not authenticated
  */
-router.post("/change-password", authenticate, authController.changePassword);
+router.post(
+    "/change-password",
+    authenticate,
+    validateBody(changePasswordSchema),
+    authController.changePassword
+);
 
 /**
  * @swagger
@@ -225,7 +257,7 @@ router.post("/change-password", authenticate, authController.changePassword);
  *       401:
  *         description: Invalid or expired refresh token
  */
-router.post("/refresh", authLimiter, authController.refresh);
+router.post("/refresh", authLimiter, validateBody(refreshSchema), authController.refresh);
 
 /**
  * @swagger
@@ -240,7 +272,7 @@ router.post("/refresh", authLimiter, authController.refresh);
  *       200:
  *         description: Logout successful
  */
-router.post("/logout", optionalAuth, authController.logout);
+router.post("/logout", optionalAuth, validateBody(logoutSchema), authController.logout);
 
 /**
  * @swagger
