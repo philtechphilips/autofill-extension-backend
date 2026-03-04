@@ -1,4 +1,5 @@
 import { polarService } from "../services/polar.service.js";
+import { paystackService } from "../services/paystack.service.js";
 import { settingsRepository } from "../models/settings.model.js";
 import { userRepository } from "../models/user.model.js";
 import { transactionRepository } from "../models/transaction.model.js";
@@ -41,6 +42,38 @@ export const createCheckout = async (req, res) => {
     } catch (err) {
         console.error("[Payment] Checkout error:", err.message);
         return error(res, "Failed to create checkout session");
+    }
+};
+
+export const initializePaystack = async (req, res) => {
+    try {
+        const { packId } = req.body;
+        const userId = req.user.id;
+        const userEmail = req.user.email;
+
+        if (!packId) {
+            return error(res, "packId is required", 400);
+        }
+
+        const validPackIds = ["pro", "elite"]; // Paystack only for paid packs
+        if (!validPackIds.includes(packId)) {
+            return error(res, `Invalid packId for Naira payment.`, 400);
+        }
+
+        if (!paystackService.isConfigured()) {
+            return error(res, "Paystack is not configured", 503);
+        }
+
+        const checkout = await paystackService.initializeTransaction(packId, userId, userEmail);
+
+        return success(res, {
+            authorizationUrl: checkout.authorization_url,
+            reference: checkout.reference,
+            accessCode: checkout.access_code,
+        });
+    } catch (err) {
+        console.error("[Payment] Paystack init error:", err.message);
+        return error(res, err.message || "Failed to initialize Paystack payment");
     }
 };
 
@@ -130,6 +163,115 @@ export const handleWebhook = async (req, res) => {
         return res.status(200).json({ received: true, error: err.message });
     }
 };
+
+export const handlePaystackWebhook = async (req, res) => {
+    try {
+        const signature = req.headers["x-paystack-signature"];
+        const rawBody = req.rawBody;
+
+        if (!paystackService.verifyWebhookSignature(rawBody, signature)) {
+            console.warn("[Paystack Webhook] Invalid signature");
+            return res.status(401).send("Invalid signature");
+        }
+
+        const payload = req.body;
+        console.log(`[Paystack Webhook] Received event: ${payload.event}`);
+
+        if (payload.event === "charge.success") {
+            await handlePaystackChargeSuccess(payload.data);
+        }
+
+        return res.status(200).json({ received: true });
+    } catch (err) {
+        console.error("[Paystack Webhook] Error:", err.message);
+        return res.status(200).json({ received: true });
+    }
+};
+
+async function handlePaystackChargeSuccess(chargeData) {
+    const reference = chargeData.reference;
+    const metadata = chargeData.metadata || {};
+    const userId = metadata.userId;
+    const packId = metadata.packId;
+
+    console.log(`[Paystack Webhook] Processing charge.success for ref ${reference}`);
+
+    const existingTransaction = await transactionRepository.findByReference(reference);
+    if (existingTransaction) {
+        console.log(`[Paystack Webhook] Reference ${reference} already processed`);
+        return;
+    }
+
+    if (!userId || !packId) {
+        console.error(
+            `[Paystack Webhook] Missing userId or packId in metadata for ref ${reference}`
+        );
+        return;
+    }
+
+    const pack = await settingsRepository.getPack(packId);
+    if (!pack) {
+        console.error(`[Paystack Webhook] Pack ${packId} not found for ref ${reference}`);
+        return;
+    }
+
+    const tokensToAdd = pack.tokens;
+    console.log(`[Paystack Webhook] Adding ${tokensToAdd} credits to user ${userId}`);
+
+    const user = await userRepository.addCredits(userId, tokensToAdd);
+    if (!user) {
+        console.error(`[Paystack Webhook] Failed to add credits for user ${userId}`);
+        return;
+    }
+
+    const packData = {
+        packId: pack.packId,
+        name: pack.name,
+        priceUSD: pack.priceUSD,
+        priceNGN: chargeData.amount / 100, // Paystack amount is in kobo
+    };
+
+    await transactionRepository.createPurchase(userId, tokensToAdd, user.credits, packData, {
+        orderId: reference,
+        method: "paystack",
+        reference: reference,
+    });
+
+    console.log(
+        `[Paystack Webhook] SUCCESS: Added ${tokensToAdd} credits to user ${userId}. New balance: ${user.credits}`
+    );
+
+    // Send emails
+    const customerEmail = user.email;
+    const amountPaid = (chargeData.amount / 100).toLocaleString();
+
+    try {
+        if (customerEmail) {
+            await sendPaymentSuccessEmail(customerEmail, {
+                name: user.name || user.firstName,
+                packName: packData.name,
+                credits: tokensToAdd,
+                amount: `₦${amountPaid}`,
+                newBalance: user.credits,
+            });
+        }
+    } catch (emailErr) {
+        console.error(`[Paystack Webhook] Email error:`, emailErr.message);
+    }
+
+    try {
+        await sendAdminPurchaseNotification({
+            customerName: user.name || user.firstName,
+            customerEmail: customerEmail,
+            packName: packData.name,
+            credits: tokensToAdd,
+            amount: `₦${amountPaid}`,
+            orderId: reference,
+        });
+    } catch (emailErr) {
+        console.error(`[Paystack Webhook] Admin notify error:`, emailErr.message);
+    }
+}
 
 async function handleOrderPaid(orderData) {
     const orderId = orderData.id;

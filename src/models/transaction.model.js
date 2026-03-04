@@ -31,6 +31,8 @@ const transactionSchema = new mongoose.Schema(
             packName: String,
             polarOrderId: String,
             polarCheckoutId: String,
+            paystackReference: String,
+            method: String,
             operation: {
                 type: String,
                 enum: [
@@ -61,6 +63,7 @@ const transactionSchema = new mongoose.Schema(
 transactionSchema.index({ userId: 1, createdAt: -1 });
 transactionSchema.index({ type: 1 });
 transactionSchema.index({ "metadata.polarOrderId": 1 });
+transactionSchema.index({ "metadata.paystackReference": 1 });
 
 const TransactionModel = mongoose.model("Transaction", transactionSchema);
 
@@ -69,7 +72,7 @@ class TransactionRepository extends BaseModel {
         super(TransactionModel);
     }
 
-    async createPurchase(userId, amount, balanceAfter, packData, polarData = {}) {
+    async createPurchase(userId, amount, balanceAfter, packData, paymentData = {}) {
         return this.create({
             userId,
             type: "purchase",
@@ -81,8 +84,10 @@ class TransactionRepository extends BaseModel {
                 packName: packData.name,
                 priceUSD: packData.priceUSD,
                 priceNGN: packData.priceNGN,
-                polarOrderId: polarData.orderId,
-                polarCheckoutId: polarData.checkoutId,
+                polarOrderId: paymentData.orderId,
+                polarCheckoutId: paymentData.checkoutId,
+                paystackReference: paymentData.reference,
+                method: paymentData.method || "polar",
             },
         });
     }
@@ -145,6 +150,10 @@ class TransactionRepository extends BaseModel {
 
     async findByPolarOrderId(polarOrderId) {
         return this.findOne({ "metadata.polarOrderId": polarOrderId });
+    }
+
+    async findByReference(reference) {
+        return this.findOne({ "metadata.paystackReference": reference });
     }
 
     async getUserStats(userId) {

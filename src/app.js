@@ -19,7 +19,14 @@ app.use(
         credentials: true,
     })
 );
-app.use(express.json({ limit: "1mb" }));
+app.use(
+    express.json({
+        limit: "1mb",
+        verify: (req, res, buf) => {
+            req.rawBody = buf;
+        },
+    })
+);
 app.use(cookieParser());
 
 // Global rate limiter - applies to all routes

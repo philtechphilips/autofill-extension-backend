@@ -47,6 +47,11 @@ const config = {
         successUrl: process.env.POLAR_SUCCESS_URL,
         cancelUrl: process.env.POLAR_CANCEL_URL,
     },
+
+    paystack: {
+        secretKey: process.env.PAYSTACK_SECRET,
+        publicKey: process.env.PAYSTACK_PUBLIC_KEY,
+    },
 };
 
 if (config.env === "production" && !process.env.JWT_SECRET) {
