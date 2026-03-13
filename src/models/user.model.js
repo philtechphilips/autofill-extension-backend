@@ -76,6 +76,11 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+        followupEmailsSent: {
+            day1: { type: Boolean, default: false },
+            day3: { type: Boolean, default: false },
+            day14: { type: Boolean, default: false },
+        },
     },
     {
         timestamps: true,

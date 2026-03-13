@@ -297,6 +297,165 @@ const templates = {
         </table>
     `),
 
+    followupDay1: ({ name }) =>
+        baseTemplate(`
+        <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          Have you tried it yet?
+        </h1>
+        <p style="margin: 0 0 24px; font-size: 15px; color: #52525b; line-height: 1.6;">
+          Hi${name ? ` ${name}` : ""},<br><br>
+          You signed up for ${config.appName} yesterday — we just wanted to check in and make sure you got started smoothly.
+        </p>
+        <div style="background-color: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 12px; font-size: 14px; font-weight: 600; color: #000000;">
+            Get your first autofill in 3 steps
+          </h3>
+          <ol style="margin: 0; padding-left: 20px; font-size: 14px; color: #52525b; line-height: 2;">
+            <li>Install the extension on Chrome or Edge</li>
+            <li>Navigate to any form — job application, signup, checkout</li>
+            <li>Click <strong>Execute Autofill</strong> and watch it fill instantly</li>
+          </ol>
+        </div>
+        <p style="margin: 0 0 24px; font-size: 14px; color: #52525b; line-height: 1.6;">
+          You still have your free credits — no payment needed to try it out.
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <a href="${config.frontendUrl}/dashboard" style="${buttonStyle}">
+                Open Dashboard
+              </a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 24px 0 0; font-size: 13px; color: #71717a; line-height: 1.6;">
+          Got questions? Just reply to this email — we read every message.
+        </p>
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e4e4e7;">
+        <p style="margin: 0 0 12px; font-size: 13px; color: #52525b; line-height: 1.6;">
+          Loving it so far? A quick review helps other people discover ${config.appName}:
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="padding-right: 8px;">
+              <a href="https://chromewebstore.google.com/detail/Autofill.Ai/hdgpkgjdemnphbknlndiloffnocnmfhd/reviews" style="display: inline-block; background-color: #f4f4f5; color: #000000; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                Review on Chrome
+              </a>
+            </td>
+            <td>
+              <a href="https://microsoftedge.microsoft.com/addons/detail/pnpokgabjdolinkjcpdegjlgemommjic" style="display: inline-block; background-color: #f4f4f5; color: #000000; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                Review on Edge
+              </a>
+            </td>
+          </tr>
+        </table>
+    `),
+
+    followupDay3: ({ name }) =>
+        baseTemplate(`
+        <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          A few things you might have missed
+        </h1>
+        <p style="margin: 0 0 24px; font-size: 15px; color: #52525b; line-height: 1.6;">
+          Hi${name ? ` ${name}` : ""},<br><br>
+          It's been 3 days since you joined ${config.appName}. Here are some features that can save you the most time:
+        </p>
+        <div style="background-color: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+          <h3 style="margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #000000;">⚡ Instant Fill</h3>
+          <p style="margin: 0; font-size: 13px; color: #52525b; line-height: 1.6;">
+            One click fills your name, email, phone, address, and more across any website.
+          </p>
+        </div>
+        <div style="background-color: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+          <h3 style="margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #000000;">📄 CV / Resume Parsing</h3>
+          <p style="margin: 0; font-size: 13px; color: #52525b; line-height: 1.6;">
+            Upload your CV once and let the AI pull your work history, skills, and education into job application forms automatically.
+          </p>
+        </div>
+        <div style="background-color: #fafafa; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #000000;">✍️ Text Enhancement</h3>
+          <p style="margin: 0; font-size: 13px; color: #52525b; line-height: 1.6;">
+            Improve cover letters and text answers with AI-powered rewrites — right inside the form field.
+          </p>
+        </div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <a href="${config.frontendUrl}/dashboard" style="${buttonStyle}">
+                Try These Features Now
+              </a>
+            </td>
+          </tr>
+        </table>
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e4e4e7;">
+        <p style="margin: 0 0 12px; font-size: 13px; color: #52525b; line-height: 1.6;">
+          If you're enjoying ${config.appName}, please leave us a review — it means a lot:
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="padding-right: 8px;">
+              <a href="https://chromewebstore.google.com/detail/Autofill.Ai/hdgpkgjdemnphbknlndiloffnocnmfhd/reviews" style="display: inline-block; background-color: #f4f4f5; color: #000000; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                Review on Chrome
+              </a>
+            </td>
+            <td>
+              <a href="https://microsoftedge.microsoft.com/addons/detail/pnpokgabjdolinkjcpdegjlgemommjic" style="display: inline-block; background-color: #f4f4f5; color: #000000; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                Review on Edge
+              </a>
+            </td>
+          </tr>
+        </table>
+    `),
+
+    followupDay14: ({ name }) =>
+        baseTemplate(`
+        <h1 style="margin: 0 0 16px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          It's been two weeks — we saved you a seat
+        </h1>
+        <p style="margin: 0 0 24px; font-size: 15px; color: #52525b; line-height: 1.6;">
+          Hi${name ? ` ${name}` : ""},<br><br>
+          Two weeks have gone by since you joined ${config.appName}. Every form you've filled manually since then could have taken seconds instead of minutes.
+        </p>
+        <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 20px; margin-bottom: 24px; text-align: center;">
+          <p style="margin: 0 0 4px; font-size: 13px; color: #1e40af; font-weight: 500;">Average time saved per form</p>
+          <p style="margin: 0; font-size: 36px; font-weight: 700; color: #1e40af;">4 minutes</p>
+          <p style="margin: 8px 0 0; font-size: 12px; color: #3b82f6;">That adds up fast across job applications, checkouts &amp; sign-ups.</p>
+        </div>
+        <p style="margin: 0 0 24px; font-size: 14px; color: #52525b; line-height: 1.6;">
+          Your free credits are still waiting. Jump back in — it takes less than a minute to set up and you'll wonder how you filled forms without it.
+        </p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center">
+              <a href="${config.frontendUrl}/dashboard" style="${buttonStyle}">
+                Get Back to Autofilling
+              </a>
+            </td>
+          </tr>
+        </table>
+        <p style="margin: 24px 0 0; font-size: 13px; color: #71717a; line-height: 1.6;">
+          If there's something we can improve or a reason you haven't used the extension, hit reply — we'd love to hear from you.
+        </p>
+        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e4e4e7;">
+        <p style="margin: 0 0 12px; font-size: 13px; color: #52525b; line-height: 1.6;">
+          Used it and loved it? A short review goes a long way:
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0">
+          <tr>
+            <td style="padding-right: 8px;">
+              <a href="https://chromewebstore.google.com/detail/Autofill.Ai/hdgpkgjdemnphbknlndiloffnocnmfhd/reviews" style="display: inline-block; background-color: #f4f4f5; color: #000000; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                Review on Chrome
+              </a>
+            </td>
+            <td>
+              <a href="https://microsoftedge.microsoft.com/addons/detail/pnpokgabjdolinkjcpdegjlgemommjic" style="display: inline-block; background-color: #f4f4f5; color: #000000; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-size: 13px; font-weight: 500;">
+                Review on Edge
+              </a>
+            </td>
+          </tr>
+        </table>
+    `),
+
     adminPurchaseNotification: ({
         customerName,
         customerEmail,
@@ -545,6 +704,75 @@ export const sendAdminPurchaseNotification = async ({
     }
 };
 
+export const sendFollowupDay1Email = async (to, { name }) => {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `Have you tried ${config.appName} yet?`,
+            html: templates.followupDay1({ name }),
+        });
+
+        if (error) {
+            console.error("[Email] Follow-up day 1 email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Follow-up day 1 email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Follow-up day 1 email error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
+export const sendFollowupDay3Email = async (to, { name }) => {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `A few things you might have missed — ${config.appName}`,
+            html: templates.followupDay3({ name }),
+        });
+
+        if (error) {
+            console.error("[Email] Follow-up day 3 email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Follow-up day 3 email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Follow-up day 3 email error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
+export const sendFollowupDay14Email = async (to, { name }) => {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject: `It's been two weeks — your free credits are waiting`,
+            html: templates.followupDay14({ name }),
+        });
+
+        if (error) {
+            console.error("[Email] Follow-up day 14 email failed:", error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Follow-up day 14 email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error("[Email] Follow-up day 14 email error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
 export default {
     sendVerificationEmail,
     sendWelcomeEmail,
@@ -553,4 +781,7 @@ export default {
     sendPaymentSuccessEmail,
     sendContactMessage,
     sendAdminPurchaseNotification,
+    sendFollowupDay1Email,
+    sendFollowupDay3Email,
+    sendFollowupDay14Email,
 };
