@@ -53,10 +53,29 @@ export const getDashboardStats = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await UserModel.find()
-            .select("-password -refreshTokens")
-            .sort({ createdAt: -1 });
-        return success(res, users);
+        const [users, allStats] = await Promise.all([
+            UserModel.find().select("-password -refreshTokens").sort({ createdAt: -1 }),
+            UserStatsModel.find().select(
+                "userId totalFills totalSuccessfulFills totalFieldsFilled lastActivityAt"
+            ),
+        ]);
+
+        const statsMap = new Map(allStats.map((s) => [s.userId.toString(), s]));
+
+        const usersWithStats = users.map((u) => {
+            const stats = statsMap.get(u._id.toString());
+            return {
+                ...u.toObject(),
+                fillStats: {
+                    totalFills: stats?.totalFills || 0,
+                    totalSuccessfulFills: stats?.totalSuccessfulFills || 0,
+                    totalFieldsFilled: stats?.totalFieldsFilled || 0,
+                    lastActivityAt: stats?.lastActivityAt || null,
+                },
+            };
+        });
+
+        return success(res, usersWithStats);
     } catch (err) {
         return error(res, "Failed to get users");
     }
