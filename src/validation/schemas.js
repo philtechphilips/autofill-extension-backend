@@ -182,6 +182,24 @@ export const getAllTransactionsQuerySchema = Joi.object({
     endDate: Joi.date().iso().optional(),
 });
 
+export const adminSendEmailSchema = Joi.object({
+    recipients: Joi.alternatives()
+        .try(
+            Joi.string().valid("all"),
+            Joi.array()
+                .items(
+                    Joi.string()
+                        .email({ tlds: { allow: false } })
+                        .lowercase()
+                        .trim()
+                )
+                .min(1)
+        )
+        .required(),
+    subject: Joi.string().trim().min(1).max(200).required(),
+    body: Joi.string().trim().min(1).required(),
+});
+
 // ─── Contact ─────────────────────────────────────────────────────────────────
 
 export const contactSchema = Joi.object({

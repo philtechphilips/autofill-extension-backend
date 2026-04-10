@@ -5,6 +5,7 @@ import { UserStatsModel } from "../models/usage.model.js";
 import { settingsRepository } from "../models/settings.model.js";
 import { TransactionModel } from "../models/transaction.model.js";
 import { polarService } from "../services/polar.service.js";
+import { sendAdminBroadcastEmail } from "../services/email.service.js";
 import { success, error } from "../utils/response.js";
 
 export const getDashboardStats = async (req, res) => {
@@ -398,6 +399,49 @@ export const getPaymentAnalytics = async (req, res) => {
     } catch (err) {
         console.error("[Admin] Failed to get payment analytics:", err);
         return error(res, "Failed to get payment analytics");
+    }
+};
+
+export const sendEmailToUsers = async (req, res) => {
+    try {
+        const { recipients, subject, body } = req.body;
+
+        let emails = [];
+
+        if (recipients === "all") {
+            const users = await UserModel.find({ isEmailVerified: true }).select("email").lean();
+            emails = users.map((u) => u.email);
+        } else {
+            // Validate that all provided emails exist
+            const users = await UserModel.find({ email: { $in: recipients } })
+                .select("email")
+                .lean();
+            emails = users.map((u) => u.email);
+
+            const notFound = recipients.filter((e) => !emails.includes(e));
+            if (notFound.length > 0) {
+                return error(res, `Users not found: ${notFound.join(", ")}`, 400);
+            }
+        }
+
+        if (emails.length === 0) {
+            return error(res, "No recipients found", 400);
+        }
+
+        // Send emails concurrently, collect results
+        const results = await Promise.allSettled(
+            emails.map((email) => sendAdminBroadcastEmail(email, { subject, body }))
+        );
+
+        const sent = results.filter((r) => r.status === "fulfilled" && r.value?.success).length;
+        const failed = results.length - sent;
+
+        console.log(`[Admin] Broadcast email "${subject}" — sent: ${sent}, failed: ${failed}`);
+
+        return success(res, { total: emails.length, sent, failed });
+    } catch (err) {
+        console.error("[Admin] Failed to send broadcast email:", err);
+        return error(res, "Failed to send email");
     }
 };
 

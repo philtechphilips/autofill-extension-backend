@@ -456,6 +456,29 @@ const templates = {
         </table>
     `),
 
+    adminBroadcast: ({ subject, body }) => {
+        // Convert plain text to HTML: escape entities, paragraphs, line breaks
+        const htmlBody = body
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .split(/\n{2,}/)
+            .map(
+                (para) =>
+                    `<p style="margin: 0 0 16px; font-size: 15px; color: #52525b; line-height: 1.7;">${para
+                        .trim()
+                        .replace(/\n/g, "<br>")}</p>`
+            )
+            .join("");
+
+        return baseTemplate(`
+        <h1 style="margin: 0 0 24px; font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.02em;">
+          ${subject}
+        </h1>
+        <div>${htmlBody}</div>
+    `);
+    },
+
     adminPurchaseNotification: ({
         customerName,
         customerEmail,
@@ -769,6 +792,29 @@ export const sendFollowupDay14Email = async (to, { name }) => {
         return { success: true, data };
     } catch (err) {
         console.error("[Email] Follow-up day 14 email error:", err);
+        return { success: false, error: err.message };
+    }
+};
+
+export const sendAdminBroadcastEmail = async (to, { subject, body }) => {
+    try {
+        const { data, error } = await resend.emails.send({
+            from: config.email.from,
+            to,
+            replyTo: config.email.replyTo,
+            subject,
+            html: templates.adminBroadcast({ subject, body }),
+        });
+
+        if (error) {
+            console.error(`[Email] Broadcast email to ${to} failed:`, error);
+            return { success: false, error };
+        }
+
+        console.log(`[Email] Broadcast email sent to ${to}`);
+        return { success: true, data };
+    } catch (err) {
+        console.error(`[Email] Broadcast email error for ${to}:`, err);
         return { success: false, error: err.message };
     }
 };
