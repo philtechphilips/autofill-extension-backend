@@ -52,31 +52,52 @@ export const getDashboardStats = async (req, res) => {
     }
 };
 
+/**
+ * GET /admin/users
+ * Without `page`, returns every user (legacy array response).
+ * With `?page=N&limit=M`, returns `{ users, pagination }` for infinite scroll.
+ */
 export const getAllUsers = async (req, res) => {
     try {
-        const [users, allStats] = await Promise.all([
-            UserModel.find().select("-password -refreshTokens").sort({ createdAt: -1 }),
-            UserStatsModel.find().select(
-                "userId totalFills totalSuccessfulFills totalFieldsFilled lastActivityAt"
-            ),
+        const paginate = req.query.page !== undefined;
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+
+        let usersQuery = UserModel.find()
+            .select("-password -refreshTokens")
+            .sort({ createdAt: -1 });
+        if (paginate) usersQuery = usersQuery.skip((page - 1) * limit).limit(limit);
+
+        const [users, total] = await Promise.all([
+            usersQuery,
+            paginate ? UserModel.countDocuments() : Promise.resolve(null),
         ]);
 
-        const statsMap = new Map(allStats.map((s) => [s.userId.toString(), s]));
+        // Only load stats for the users being returned
+        const stats = await UserStatsModel.find({
+            userId: { $in: users.map((u) => u._id) },
+        }).select("userId totalFills totalSuccessfulFills totalFieldsFilled lastActivityAt");
+        const statsMap = new Map(stats.map((s) => [s.userId.toString(), s]));
 
         const usersWithStats = users.map((u) => {
-            const stats = statsMap.get(u._id.toString());
+            const s = statsMap.get(u._id.toString());
             return {
                 ...u.toObject(),
                 fillStats: {
-                    totalFills: stats?.totalFills || 0,
-                    totalSuccessfulFills: stats?.totalSuccessfulFills || 0,
-                    totalFieldsFilled: stats?.totalFieldsFilled || 0,
-                    lastActivityAt: stats?.lastActivityAt || null,
+                    totalFills: s?.totalFills || 0,
+                    totalSuccessfulFills: s?.totalSuccessfulFills || 0,
+                    totalFieldsFilled: s?.totalFieldsFilled || 0,
+                    lastActivityAt: s?.lastActivityAt || null,
                 },
             };
         });
 
-        return success(res, usersWithStats);
+        if (!paginate) return success(res, usersWithStats);
+
+        return success(res, {
+            users: usersWithStats,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        });
     } catch (err) {
         return error(res, "Failed to get users");
     }
